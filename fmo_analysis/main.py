@@ -1,6 +1,9 @@
 import click
 import json
 import numbers
+import numpy as np
+from pathlib import Path
+from . import util
 
 
 DEFAULT_CONFIG = {
@@ -26,13 +29,18 @@ def cli():
 
 @click.command()
 @click.option("-c", "--config", "config_file", type=click.File(), help="A config file used to override default values in the analysis. See 'default-config' for the default values.")
-def run(config_file):
+@click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
+def run(config_file, input_dir):
     if config_file:
         config = merge_configs(json.load(config_file))
     else:
         config = DEFAULT_CONFIG
     if not valid_config(config):
         click.echo("Invalid config", err=True)
+        return
+    conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
+    if conf_files == []:
+        click.echo(f"No 'conf*.csv' files found in directory '{input_dir}'", err=True)
         return
 
 
