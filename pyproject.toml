@@ -16,7 +16,7 @@ openpyxl = "^3.0.9"
 pytest = "^5.2"
 
 [tool.poetry.scripts]
-fmo_analysis = "fmo_analysis.main:cli"
+fmo-analysis = "fmo_analysis.main:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
