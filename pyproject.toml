@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "fmo_analysis"
+version = "0.1.0"
+description = ""
+authors = ["Zach Mitchell <zmitchell@fastmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.10"
+numpy = "^1.21.2"
+scipy = "^1.7.1"
+matplotlib = "^3.4.3"
+click = "^8.0.3"
+openpyxl = "^3.0.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[tool.poetry.scripts]
+fmo_analysis = "fmo_analysis.main:cli"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
