@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 import numpy as np
 
 
@@ -24,9 +25,9 @@ class Pigment:
     mu: np.ndarray
 
 
-def parse_conf_file(cf_path, config):
+def parse_conf_file(config: Config, cf_path: Path):
     """Extract the Hamiltonian and pigment data from a 'conf*.csv' file."""
-    n_pigs = config["pignums"]
+    n_pigs = config.pignums
     arr = np.loadtxt(cf_path)
     rows, cols = arr.shape
     if (rows != n_pigs) or (cols != n_pigs + 6):
@@ -35,4 +36,4 @@ def parse_conf_file(cf_path, config):
     mus = arr[:, -6:-3]
     coords = arr[:, -3:]
     pigments = [Pigment(np.array(c), np.array(m)) for c, m in zip(coords, mus)]
-    return {"ham": ham, "pigs": pigments}
+    return ham, pigments

@@ -2,8 +2,8 @@ import click
 import json
 import numbers
 import numpy as np
-from dataclasses import dataclass
 from pathlib import Path
+from . import exciton
 from . import util
 
 
@@ -53,6 +53,10 @@ def run(config_file, input_dir):
             if not shift_path.exists():
                 click.echo(f"Missing triplet shift file for '{f.name}'", err=True)
                 return
+    spectra = []
+    for c in conf_files:
+        ham, pigs = util.parse_conf_file(config, c)
+        spectra.append(exciton.make_stick_spectra(config, ham, pigs))
 
 
 @click.command()
@@ -86,6 +90,7 @@ def valid_config(config):
     ]
     if not all(bounds_checks):
         return False
+    # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
         ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts"]]
     if not all(bool_checks):
