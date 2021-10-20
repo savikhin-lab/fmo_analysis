@@ -2,6 +2,7 @@ import click
 import json
 import numbers
 import numpy as np
+from dataclasses import dataclass
 from pathlib import Path
 from . import util
 
@@ -32,16 +33,26 @@ def cli():
 @click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
 def run(config_file, input_dir):
     if config_file:
-        config = merge_configs(json.load(config_file))
+        config_opts = merge_configs(json.load(config_file))
     else:
-        config = DEFAULT_CONFIG
-    if not valid_config(config):
+        config_opts = DEFAULT_CONFIG
+    if not valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
+    config = util.Config(**config_opts)
     conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
     if conf_files == []:
         click.echo(f"No 'conf*.csv' files found in directory '{input_dir}'", err=True)
         return
+    if config.use_shift_T:
+        parent = conf_files[0].parent
+        for f in conf_files:
+            stem = f.stem
+            ext = f.suffix
+            shift_path = parent / (stem + "-shift" + ext)
+            if not shift_path.exists():
+                click.echo(f"Missing triplet shift file for '{f.name}'", err=True)
+                return
 
 
 @click.command()
