@@ -3,9 +3,9 @@ import json
 import numbers
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 from . import exciton
-from .util import Config, parse_conf_file, save_stick_spectrum
+from .util import Config
 
 
 DEFAULT_CONFIG = {
@@ -56,15 +56,10 @@ def run(config_file, input_dir, output_dir, overwrite):
         click.echo(f"Attempting to overwrite data in '{output_dir.name}' without specifying '--overwrite'. Exiting.", err=True)
         return
     output_dir.mkdir(exist_ok=True)
-    sticks_dir = output_dir / "stick_spectra"
-    sticks_dir.mkdir(exist_ok=True)
-    stick_results = []
-    for c in conf_files:
-        ham, pigs = parse_conf_file(config, c)
-        stick_result = exciton.make_stick_spectra(config, ham, pigs)
-        stick_result["file"] = c
-        stick_results.append(stick_result)
-        save_stick_spectrum(sticks_dir, stick_result, overwrite)
+    save_config(output_dir, config_opts)
+    # Compute and save stick spectra
+    stick_spectra = exciton.make_stick_spectra(config, conf_files)
+    exciton.save_stick_spectra(output_dir, stick_spectra)
     
 
 @click.command()
@@ -81,7 +76,7 @@ def merge_configs(user_supplied_config):
     return merged
 
 
-def valid_config(config):
+def valid_config(config: Dict) -> bool:
     """Ensure that any configuration errors are caught before starting analysis."""
     # Make sure some values are numeric
     numeric = [isinstance(config[k], numbers.Number) for k in
@@ -104,6 +99,17 @@ def valid_config(config):
     if not all(bool_checks):
         return False
     return True
+
+
+def save_config(outdir: Path, config: Dict) -> None:
+    """Save the config used for this analysis to disk for auditing later."""
+    try:
+        del config["overwrite"]
+    except KeyError:
+        pass
+    out_path = outdir / "config_used.json"
+    with out_path.open("w") as f:
+        json.dump(config, f)
 
 
 def find_conf_files(input_dir: Path) -> List[Path]:
