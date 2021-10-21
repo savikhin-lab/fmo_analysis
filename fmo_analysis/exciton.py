@@ -124,7 +124,7 @@ def make_broadened_spectrum(config: Config, stick: Dict) -> Dict:
     for exc in range(len(energies)):
         abs += dip_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
         cd += rot_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
-    return {"abs": abs, "cd": cd}
+    return {"abs": abs, "cd": cd, "x": x}
 
 
 def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
@@ -132,7 +132,50 @@ def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
     individual_spectra = []
     for s in sticks:
         b = make_broadened_spectrum(config, s)
+        b["file"] = s["file"]
         individual_spectra.append(b)
     avg_abs = np.mean([s["abs"] for s in individual_spectra], axis=0)
     avg_cd = np.mean([s["cd"] for s in individual_spectra], axis=0)
     return {"spectra": individual_spectra, "avg_abs": avg_abs, "avg_cd": avg_cd}
+
+
+def save_broadened_spectrum(parent: Path, spec: Dict) -> None:
+    """Save the broadened absorption and CD spectra for a Hamiltonian."""
+    outdir = parent / spec["file"].stem
+    outdir.mkdir(exist_ok=True)
+    x = spec["x"]
+    abs_data = np.zeros((len(x), 2))
+    abs_data[:, 0] = x
+    abs_data[:, 1] = spec["abs"]
+    np.savetxt(outdir / "abs.csv", abs_data, delimiter=",")
+    cd_data = np.zeros((len(x), 2))
+    cd_data[:, 0] = x
+    cd_data[:, 1] = spec["cd"]
+    np.savetxt(outdir / "cd.csv", cd_data, delimiter=",")
+
+
+def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
+    """Save the results of computing the broadened spectra.
+    
+    The directory structure is:
+    <output directory>/
+        broadened_spectra/
+            conf*/
+            avg_abs.csv
+            avg_abs.png
+            avg_cd.csv
+            avg_cd.png
+    """
+    b_dir = outdir / "broadened_spectra"
+    b_dir.mkdir(exist_ok=True)
+    for s in b_specs["spectra"]:
+        save_broadened_spectrum(b_dir, s)
+    x = b_specs["spectra"][0]["x"]
+    abs_data = np.zeros((len(x), 2))
+    abs_data[:, 0] = x
+    abs_data[:, 1] = b_specs["avg_abs"]
+    np.savetxt(outdir / "avg_abs.csv", abs_data, delimiter=",")
+    cd_data = np.zeros((len(x), 2))
+    cd_data[:, 0] = x
+    cd_data[:, 1] = b_specs["avg_cd"]
+    np.savetxt(outdir / "avg_cd.csv", cd_data, delimiter=",")
