@@ -31,7 +31,10 @@ def cli():
 @click.command()
 @click.option("-c", "--config", "config_file", type=click.File(), help="A config file used to override default values in the analysis. See 'default-config' for the default values.")
 @click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
-def run(config_file, input_dir):
+@click.option("-o", "--output-dir", required=True, type=click.Path(dir_okay=True, file_okay=False, path_type=Path), help="The directory in which the analysis results will be stored.")
+@click.option("--overwrite", is_flag=True, default=False, help="If specified, overwrite the data in the output directory.")
+def run(config_file, input_dir, output_dir, overwrite):
+    # Making sure we have a valid configuration
     if config_file:
         config_opts = merge_configs(json.load(config_file))
     else:
@@ -40,6 +43,7 @@ def run(config_file, input_dir):
         click.echo("Invalid config", err=True)
         return
     config = util.Config(**config_opts)
+    # Loading the Hamiltonians and pigments from disk
     conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
     if conf_files == []:
         click.echo(f"No 'conf*.csv' files found in directory '{input_dir}'", err=True)
@@ -53,10 +57,27 @@ def run(config_file, input_dir):
             if not shift_path.exists():
                 click.echo(f"Missing triplet shift file for '{f.name}'", err=True)
                 return
-    spectra = []
+    if not output_dir.exists():
+        output_dir.mkdir()
+    # Computing the stick spectra and saving them to disk
+    sticks_dir = output_dir / "stick_spectra"
+    if sticks_dir.exists() and not overwrite:
+        click.echo(f"The directory 'stick_spectra' already exists in the output directory but '--overwrite' was not specified. Exiting.", err=True)
+        return
+    else:
+        sticks_dir.mkdir(exist_ok=True)
+    stick_results = []
     for c in conf_files:
         ham, pigs = util.parse_conf_file(config, c)
-        spectra.append(exciton.make_stick_spectra(config, ham, pigs))
+        stick_result = exciton.make_stick_spectra(config, ham, pigs)
+        stick_result["file"] = c
+        stick_results.append(stick_result)
+        try:
+            util.save_stick_spectrum(sticks_dir, stick_result, overwrite)
+        except FileExistsError:
+            click.echo("Tried to overwrite an existing result without specifying '--overwrite'. Exiting.", err=True)
+            return
+    
 
 
 @click.command()
