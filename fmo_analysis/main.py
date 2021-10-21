@@ -3,8 +3,9 @@ import json
 import numbers
 import numpy as np
 from pathlib import Path
+from typing import List
 from . import exciton
-from . import util
+from .util import Config, parse_conf_file, save_stick_spectrum
 
 
 DEFAULT_CONFIG = {
@@ -19,7 +20,8 @@ DEFAULT_CONFIG = {
     "delete_pig": 0,
     "use_shift_T": False,
     "scale": False,
-    "ignore_offdiagonal_shifts": False
+    "ignore_offdiagonal_shifts": False,
+    "overwrite": False,
 }
 
 
@@ -39,46 +41,31 @@ def run(config_file, input_dir, output_dir, overwrite):
         config_opts = merge_configs(json.load(config_file))
     else:
         config_opts = DEFAULT_CONFIG
+    if overwrite:
+        config_opts["overwrite"] = overwrite
     if not valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
-    config = util.Config(**config_opts)
+    config = Config(**config_opts)
     # Loading the Hamiltonians and pigments from disk
-    conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
-    if conf_files == []:
-        click.echo(f"No 'conf*.csv' files found in directory '{input_dir}'", err=True)
-        return
+    conf_files = find_conf_files(input_dir)
     if config.use_shift_T:
-        parent = conf_files[0].parent
-        for f in conf_files:
-            stem = f.stem
-            ext = f.suffix
-            shift_path = parent / (stem + "-shift" + ext)
-            if not shift_path.exists():
-                click.echo(f"Missing triplet shift file for '{f.name}'", err=True)
-                return
-    if not output_dir.exists():
-        output_dir.mkdir()
-    # Computing the stick spectra and saving them to disk
-    sticks_dir = output_dir / "stick_spectra"
-    if sticks_dir.exists() and not overwrite:
-        click.echo(f"The directory 'stick_spectra' already exists in the output directory but '--overwrite' was not specified. Exiting.", err=True)
+        shift_files = find_shift_files(conf_files, config)
+    # Make sure we're not trying to overwrite anything unless we want to
+    if not config.overwrite and would_overwrite(output_dir):
+        click.echo(f"Attempting to overwrite data in '{output_dir.name}' without specifying '--overwrite'. Exiting.", err=True)
         return
-    else:
-        sticks_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(exist_ok=True)
+    sticks_dir = output_dir / "stick_spectra"
+    sticks_dir.mkdir(exist_ok=True)
     stick_results = []
     for c in conf_files:
-        ham, pigs = util.parse_conf_file(config, c)
+        ham, pigs = parse_conf_file(config, c)
         stick_result = exciton.make_stick_spectra(config, ham, pigs)
         stick_result["file"] = c
         stick_results.append(stick_result)
-        try:
-            util.save_stick_spectrum(sticks_dir, stick_result, overwrite)
-        except FileExistsError:
-            click.echo("Tried to overwrite an existing result without specifying '--overwrite'. Exiting.", err=True)
-            return
+        save_stick_spectrum(sticks_dir, stick_result, overwrite)
     
-
 
 @click.command()
 def default_config():
@@ -113,10 +100,45 @@ def valid_config(config):
         return False
     # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
-        ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts"]]
+        ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts", "overwrite"]]
     if not all(bool_checks):
         return False
     return True
+
+
+def find_conf_files(input_dir: Path) -> List[Path]:
+    """Obtains paths for the 'conf*.csv' files containing the Hamiltonians."""
+    conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
+    if conf_files == []:
+        raise FileNotFoundError(f"No 'conf*.csv' files found in directory '{input_dir}'")
+    return conf_files
+
+
+def find_shift_files(files: List[Path], config: Config) -> List[Path]:
+    """Obtains paths for the 'conf*-shift.csv' files."""
+    parent = files[0].parent
+    paths = []
+    for f in files:
+        stem = f.stem
+        ext = f.suffix
+        shift_path = parent / (stem + "-shift" + ext)
+        if not shift_path.exists():
+            raise FileNotFoundError(f"Shift file '{shift_path.name}' not found.")
+        paths.append(shift_path)
+    return paths
+
+
+def would_overwrite(outdir: Path) -> bool:
+    """Walks the directory structure to make sure nothing exists that would be overwritten."""
+    if outdir.exists():
+        return True
+    stick_dir = outdir / "stick_spectra"
+    if stick_dir.exists():
+        return True
+    broadened_dir = outdir / "broadened_spectra"
+    if broadened_dir.exists():
+        return True
+    return False
 
 cli.add_command(run)
 cli.add_command(default_config)

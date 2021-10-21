@@ -18,6 +18,7 @@ class Config:
     use_shift_T: bool
     scale: bool
     ignore_offdiagonal_shifts: bool
+    overwrite: bool
 
 
 @dataclass
@@ -58,10 +59,7 @@ def save_stick_spectrum(parent_dir: Path, stick_result, overwrite):
     """
     dir_name = stick_result["file"].stem + "-stick"
     outdir = parent_dir / dir_name
-    if overwrite:
-        outdir.mkdir(exist_ok=True)
-    else:
-        outdir.mkdir()
+    outdir.mkdir(exist_ok=True)
     np.savetxt(outdir / "energies.csv", stick_result["e_vals"], delimiter=",")
     np.savetxt(outdir / "eigenvectors.csv", stick_result["e_vecs"].T, delimiter=",")
     np.savetxt(outdir / "exciton_mus.csv", stick_result["exciton_mus"], delimiter=",")
