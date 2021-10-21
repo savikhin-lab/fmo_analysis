@@ -60,6 +60,8 @@ def run(config_file, input_dir, output_dir, overwrite):
     # Compute and save stick spectra
     stick_spectra = exciton.make_stick_spectra(config, conf_files)
     exciton.save_stick_spectra(output_dir, stick_spectra)
+    # Compute and save broadened spectra
+    broadened_spectra = exciton.make_broadened_spectra(config, stick_spectra)
     
 
 @click.command()

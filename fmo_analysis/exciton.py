@@ -110,3 +110,29 @@ def save_stick_spectra(outdir: Path, sticks: List[Dict]) -> None:
     stick_dir.mkdir(exist_ok=True)
     for s in sticks:
         save_stick_spectrum(stick_dir, s)
+
+
+def make_broadened_spectrum(config: Config, stick: Dict) -> Dict:
+    """Make the broadened spectrum from a stick spectrum."""
+    x = np.arange(config.xfrom, config.xto, config.xstep, dtype=np.float64)
+    abs = np.zeros_like(x)
+    cd = np.zeros_like(x)
+    dip_strengths = stick["stick_abs"]
+    rot_strengths = stick["stick_cd"]
+    energies = stick["e_vals"]
+    sigma_squared = config.bandwidth**2 / (4 * np.log(2))
+    for exc in range(len(energies)):
+        abs += dip_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
+        cd += rot_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
+    return {"abs": abs, "cd": cd}
+
+
+def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
+    """Make broadened spectra from the stick spectra."""
+    individual_spectra = []
+    for s in sticks:
+        b = make_broadened_spectrum(config, s)
+        individual_spectra.append(b)
+    avg_abs = np.mean([s["abs"] for s in individual_spectra], axis=0)
+    avg_cd = np.mean([s["cd"] for s in individual_spectra], axis=0)
+    return {"spectra": individual_spectra, "avg_abs": avg_abs, "avg_cd": avg_cd}
