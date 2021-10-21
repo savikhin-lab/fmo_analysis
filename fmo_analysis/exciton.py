@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Dict
@@ -139,43 +140,59 @@ def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
     return {"spectra": individual_spectra, "avg_abs": avg_abs, "avg_cd": avg_cd}
 
 
-def save_broadened_spectrum(parent: Path, spec: Dict) -> None:
-    """Save the broadened absorption and CD spectra for a Hamiltonian."""
-    outdir = parent / spec["file"].stem
-    outdir.mkdir(exist_ok=True)
-    x = spec["x"]
-    abs_data = np.zeros((len(x), 2))
-    abs_data[:, 0] = x
-    abs_data[:, 1] = spec["abs"]
-    np.savetxt(outdir / "abs.csv", abs_data, delimiter=",")
-    cd_data = np.zeros((len(x), 2))
-    cd_data[:, 0] = x
-    cd_data[:, 1] = spec["cd"]
-    np.savetxt(outdir / "cd.csv", cd_data, delimiter=",")
-
-
 def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
     """Save the results of computing the broadened spectra.
     
     The directory structure is:
     <output directory>/
         broadened_spectra/
-            conf*/
+            abs/
+            cd/
+            plots/
             avg_abs.csv
-            avg_abs.png
             avg_cd.csv
-            avg_cd.png
+            avg.png
     """
     b_dir = outdir / "broadened_spectra"
     b_dir.mkdir(exist_ok=True)
+    abs_dir = b_dir / "abs"
+    abs_dir.mkdir(exist_ok=True)
+    cd_dir = b_dir / "cd"
+    cd_dir.mkdir(exist_ok=True)
+    plots_dir = b_dir / "plots"
+    plots_dir.mkdir(exist_ok=True)
     for s in b_specs["spectra"]:
-        save_broadened_spectrum(b_dir, s)
+        x = s["x"]
+        abs = s["abs"]
+        cd = s["cd"]
+        stem = s["file"].stem
+        np.savetxt(abs_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
+        np.savetxt(cd_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
+        save_stacked_plot(plots_dir / f"{stem}.png", x, abs, cd)
     x = b_specs["spectra"][0]["x"]
     abs_data = np.zeros((len(x), 2))
     abs_data[:, 0] = x
     abs_data[:, 1] = b_specs["avg_abs"]
-    np.savetxt(outdir / "avg_abs.csv", abs_data, delimiter=",")
+    np.savetxt(b_dir / "avg_abs.csv", abs_data, delimiter=",")
     cd_data = np.zeros((len(x), 2))
     cd_data[:, 0] = x
     cd_data[:, 1] = b_specs["avg_cd"]
-    np.savetxt(outdir / "avg_cd.csv", cd_data, delimiter=",")
+    np.savetxt(b_dir / "avg_cd.csv", cd_data, delimiter=",")
+    save_stacked_plot(b_dir / "avg.png", x, abs_data[:, 1], cd_data[:, 1], title="Average")
+
+
+def save_stacked_plot(path: Path, x: np.ndarray, abs: np.ndarray, cd: np.ndarray, **opts: Dict) -> None:
+    """Save a plot with absorption and CD in the same figure."""
+    fig, (ax_abs, ax_cd) = plt.subplots(2, 1, sharex=True)
+    ax_abs.plot(x, abs)
+    ax_abs.set(xlabel="", ylabel="Abs.")
+    ax_abs.grid()
+    ax_cd.plot(x, cd)
+    ax_cd.set(xlabel="Wavenumbers", ylabel="CD")
+    ax_cd.grid()
+    try:
+        ax_abs.set(title=opts["title"])
+    except KeyError:
+        pass
+    fig.savefig(path)
+    plt.close(fig)
