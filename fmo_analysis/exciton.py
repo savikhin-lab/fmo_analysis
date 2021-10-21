@@ -40,7 +40,7 @@ def make_stick_spectra(config: Config, ham: np.ndarray, pigs: List[Pigment]):
     stick_abs = np.zeros(n_pigs)
     stick_cd = np.zeros(n_pigs)
     for i in range(n_pigs):
-        exciton_mus[i, :] = np.sum(np.repeat(e_vecs[:, 0], 3).reshape((n_pigs, 3)) * pig_mus, axis=0)
+        exciton_mus[i, :] = np.sum(np.repeat(e_vecs[:, i], 3).reshape((n_pigs, 3)) * pig_mus, axis=0)
         stick_abs[i] = np.dot(exciton_mus[i], exciton_mus[i])
         for j in range(n_pigs):
             for k in range(n_pigs):
