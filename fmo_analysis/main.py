@@ -35,14 +35,23 @@ def cli():
 @click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
 @click.option("-o", "--output-dir", required=True, type=click.Path(dir_okay=True, file_okay=False, path_type=Path), help="The directory in which the analysis results will be stored.")
 @click.option("--overwrite", is_flag=True, default=False, help="If specified, overwrite the data in the output directory.")
-def run(config_file, input_dir, output_dir, overwrite):
+@click.option("-b", "--bandwidth", type=click.FLOAT, help="The bandwidth for each transition.")
+@click.option("-d", "--delete-pigment", type=click.INT, help="The pigment to delete (0 means none).")
+def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment):
     # Making sure we have a valid configuration
+    if config_file and any([overwrite, bandwidth, (delete_pigment is not None)]):
+        click.echo("Supply config options as flags or in config file, but not both.", err=True)
+        return
     if config_file:
         config_opts = merge_configs(json.load(config_file))
     else:
         config_opts = DEFAULT_CONFIG
     if overwrite:
         config_opts["overwrite"] = overwrite
+    if bandwidth:
+        config_opts["bandwidth"] = bandwidth
+    if delete_pigment is not None:
+        config_opts["delete_pig"] = delete_pigment
     if not valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
