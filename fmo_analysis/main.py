@@ -12,7 +12,7 @@ DEFAULT_CONFIG = {
     "xfrom": 11790,
     "xto": 13300,
     "xstep": 1,
-    "bandwidth": 200,
+    "bandwidth": 70,
     "shift_diag": -2420,
     "pignums": 8,
     "delete_pig8": False,
