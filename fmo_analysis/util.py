@@ -35,6 +35,9 @@ def parse_conf_file(config: Config, cf_path: Path) -> Tuple[np.ndarray, List[Pig
     if (rows != n_pigs) or (cols != n_pigs + 6):
         raise ValueError(f"Expected conf file with dimensions {n_pigs}x{n_pigs + 6}, found {rows}x{cols}")
     ham = arr[:, :n_pigs]
+    # Shift diagonal elements according to config
+    for i in range(n_pigs):
+        ham[i, i] += config.shift_diag
     mus = arr[:, -6:-3]
     coords = arr[:, -3:]
     pigments = [Pigment(np.array(c), np.array(m)) for c, m in zip(coords, mus)]
