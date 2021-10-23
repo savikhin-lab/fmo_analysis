@@ -20,6 +20,7 @@ class Config:
     ignore_offdiagonal_shifts: bool
     overwrite: bool
     save_figs: bool
+    save_intermediate: bool
 
 
 @dataclass

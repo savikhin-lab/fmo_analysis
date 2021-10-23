@@ -166,8 +166,9 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     cd_dir.mkdir(exist_ok=True)
     plots_dir = b_dir / "plots"
     plots_dir.mkdir(exist_ok=True)
-    for s in b_specs["spectra"]:
-        save_broadened_spectrum_csv(abs_dir, cd_dir, s)
+    if config.save_intermediate:
+        for s in b_specs["spectra"]:
+            save_broadened_spectrum_csv(abs_dir, cd_dir, s)
     if config.save_figs:
         save_stacked_plots(plots_dir, b_specs["spectra"])
     x = b_specs["spectra"][0]["x"]
