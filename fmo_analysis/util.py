@@ -19,6 +19,7 @@ class Config:
     scale: bool
     ignore_offdiagonal_shifts: bool
     overwrite: bool
+    save_figs: bool
 
 
 @dataclass

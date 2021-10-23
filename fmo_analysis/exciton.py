@@ -140,7 +140,7 @@ def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
     return {"spectra": individual_spectra, "avg_abs": avg_abs, "avg_cd": avg_cd}
 
 
-def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
+def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) -> None:
     """Save the results of computing the broadened spectra.
     
     The directory structure is:
@@ -168,7 +168,8 @@ def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
         stem = s["file"].stem
         np.savetxt(abs_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
         np.savetxt(cd_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
-    save_stacked_plots(plots_dir, b_specs["spectra"])
+    if config.save_figs:
+        save_stacked_plots(plots_dir, b_specs["spectra"])
     x = b_specs["spectra"][0]["x"]
     abs_data = np.zeros((len(x), 2))
     abs_data[:, 0] = x

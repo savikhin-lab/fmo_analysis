@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     "scale": False,
     "ignore_offdiagonal_shifts": False,
     "overwrite": False,
+    "save_figs": False
 }
 
 
@@ -37,7 +38,8 @@ def cli():
 @click.option("--overwrite", is_flag=True, default=False, help="If specified, overwrite the data in the output directory.")
 @click.option("-b", "--bandwidth", type=click.FLOAT, help="The bandwidth for each transition.")
 @click.option("-d", "--delete-pigment", type=click.INT, help="The pigment to delete (0 means none).")
-def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment):
+@click.option("-f", "--save-figs", is_flag=True, help="Save intermediate spectra. An average spectrum is still saved when this flag is not specified.")
+def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs):
     # Making sure we have a valid configuration
     if config_file and any([overwrite, bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
@@ -52,6 +54,8 @@ def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment
         config_opts["bandwidth"] = bandwidth
     if delete_pigment is not None:
         config_opts["delete_pig"] = delete_pigment
+    if save_figs:
+        config_opts["save_figs"] = save_figs
     if not valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
@@ -71,7 +75,7 @@ def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment
     exciton.save_stick_spectra(output_dir, stick_spectra)
     # Compute and save broadened spectra
     broadened_spectra = exciton.make_broadened_spectra(config, stick_spectra)
-    exciton.save_broadened_spectra(output_dir, broadened_spectra)
+    exciton.save_broadened_spectra(config, output_dir, broadened_spectra)
     
 
 @click.command()
@@ -107,7 +111,7 @@ def valid_config(config: Dict) -> bool:
         return False
     # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
-        ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts", "overwrite"]]
+        ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts", "overwrite", "save_figs"]]
     if not all(bool_checks):
         return False
     return True
