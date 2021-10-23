@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Dict
-from .util import parse_conf_file, Pigment, Config
+from .util import faster_np_savetxt, faster_np_savetxt_1d, parse_conf_file, Pigment, Config
 
 
 def delete_pigment_ham(ham: np.ndarray, delete: int) -> np.ndarray:
@@ -96,11 +96,11 @@ def save_stick_spectrum(parent_dir: Path, stick: Dict):
     dir_name = stick["file"].stem
     outdir = parent_dir / dir_name
     outdir.mkdir(exist_ok=True)
-    np.savetxt(outdir / "energies.csv", stick["e_vals"], delimiter=",")
-    np.savetxt(outdir / "eigenvectors.csv", stick["e_vecs"].T, delimiter=",")
-    np.savetxt(outdir / "exciton_mus.csv", stick["exciton_mus"], delimiter=",")
-    np.savetxt(outdir / "stick_abs.csv", stick["stick_abs"], delimiter=",")
-    np.savetxt(outdir / "stick_cd.csv", stick["stick_cd"], delimiter=",")
+    faster_np_savetxt_1d(outdir / "energies.csv", stick["e_vals"])
+    faster_np_savetxt(outdir / "eigenvectors.csv", stick["e_vecs"].T)
+    faster_np_savetxt(outdir / "exciton_mus.csv", stick["exciton_mus"])
+    faster_np_savetxt_1d(outdir / "stick_abs.csv", stick["stick_abs"])
+    faster_np_savetxt_1d(outdir / "stick_cd.csv", stick["stick_cd"])
 
 
 def save_stick_spectra(outdir: Path, sticks: List[Dict]) -> None:
@@ -174,11 +174,11 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     abs_data = np.zeros((len(x), 2))
     abs_data[:, 0] = x
     abs_data[:, 1] = b_specs["avg_abs"]
-    np.savetxt(b_dir / "avg_abs.csv", abs_data, delimiter=",")
+    faster_np_savetxt(b_dir / "avg_abs.csv", abs_data)
     cd_data = np.zeros((len(x), 2))
     cd_data[:, 0] = x
     cd_data[:, 1] = b_specs["avg_cd"]
-    np.savetxt(b_dir / "avg_cd.csv", cd_data, delimiter=",")
+    faster_np_savetxt(b_dir / "avg_cd.csv", cd_data)
     save_stacked_plot(b_dir / "avg.tiff", x, abs_data[:, 1], cd_data[:, 1], title="Average")
     save_stacked_plot(b_dir / "avg_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], title="Average", xlabel="Wavelength (nm)")
 
@@ -189,8 +189,8 @@ def save_broadened_spectrum_csv(a_dir: Path, c_dir: Path, spec: Dict) -> None:
     abs = spec["abs"]
     cd = spec["cd"]
     stem = spec["file"].stem
-    np.savetxt(a_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
-    np.savetxt(c_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
+    faster_np_savetxt(a_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1))
+    faster_np_savetxt(c_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1))
 
 
 def save_stacked_plots(outdir: Path, specs: List[Dict], **opts: Dict) -> None:

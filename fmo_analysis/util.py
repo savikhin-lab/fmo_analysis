@@ -43,3 +43,21 @@ def parse_conf_file(config: Config, cf_path: Path) -> Tuple[np.ndarray, List[Pig
     coords = arr[:, -3:]
     pigments = [Pigment(np.array(c), np.array(m)) for c, m in zip(coords, mus)]
     return ham, pigments
+
+
+def faster_np_savetxt_1d(fname: Path, X: np.ndarray) -> None:
+    """A strippled down version of 'np.savetxt' for 1D arrays."""
+    with fname.open("w") as f:
+        rows = [f"{x:.8e}" for x in X]
+        out_str = "\n".join(rows)
+        f.write(out_str)
+
+
+def faster_np_savetxt(fname: Path, X: np.ndarray) -> None:
+    """A stripped down version of 'np.savetxt' for N-dimensional arrays."""
+    _, cols = X.shape
+    fmt = ",".join(["%.8e"] * cols)
+    with fname.open("w") as f:
+        rows = [fmt % tuple(row) for row in X]
+        out_str = "\n".join(rows)
+        f.write(out_str)
