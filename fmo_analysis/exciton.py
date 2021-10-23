@@ -47,7 +47,12 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         for j in range(n_pigs):
             for k in range(n_pigs):
                 r = pigs[j].pos - pigs[k].pos
-                mu_cross = np.cross(pigs[j].mu, pigs[k].mu)
+                # NumPy cross product function is super slow for small arrays
+                # so we do it by hand for >10x speedup. It makes a difference!
+                mu_cross = np.empty(3)
+                mu_cross[0] = pigs[j].mu[1] * pigs[k].mu[2] - pigs[j].mu[2] * pigs[k].mu[1]
+                mu_cross[1] = pigs[j].mu[2] * pigs[k].mu[0] - pigs[j].mu[0] * pigs[k].mu[2]
+                mu_cross[2] = pigs[j].mu[0] * pigs[k].mu[1] - pigs[j].mu[1] * pigs[k].mu[0] 
                 stick_cd[i] += e_vecs[j, i] * e_vecs[k, i] * np.dot(r, mu_cross)
     out = {
         "ham_deleted": ham,
