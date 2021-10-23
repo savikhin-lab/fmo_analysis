@@ -168,7 +168,7 @@ def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
         stem = s["file"].stem
         np.savetxt(abs_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
         np.savetxt(cd_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
-        save_stacked_plot(plots_dir / f"{stem}.png", x, abs, cd)
+    save_stacked_plots(plots_dir, b_specs["spectra"])
     x = b_specs["spectra"][0]["x"]
     abs_data = np.zeros((len(x), 2))
     abs_data[:, 0] = x
@@ -178,7 +178,43 @@ def save_broadened_spectra(outdir: Path, b_specs: List[Dict]) -> None:
     cd_data[:, 0] = x
     cd_data[:, 1] = b_specs["avg_cd"]
     np.savetxt(b_dir / "avg_cd.csv", cd_data, delimiter=",")
-    save_stacked_plot(b_dir / "avg.png", x, abs_data[:, 1], cd_data[:, 1], title="Average")
+    save_stacked_plot(b_dir / "avg.tiff", x, abs_data[:, 1], cd_data[:, 1], title="Average")
+    save_stacked_plot(b_dir / "avg_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], title="Average", xlabel="Wavelength (nm)")
+
+
+def save_stacked_plots(outdir: Path, specs: List[Dict], **opts: Dict) -> None:
+    """Save stacked plots quickly by reusing axes and a single figure object."""
+    x = specs[0]["x"]
+    max_abs = max([np.max(s["abs"]) for s in specs])
+    min_abs = min([np.min(s["abs"]) for s in specs])
+    max_cd = max([np.max(s["cd"]) for s in specs])
+    min_cd = min([np.min(s["cd"]) for s in specs])
+    fig, (ax_abs, ax_cd) = plt.subplots(2, 1, sharex=True)
+    ax_abs.set(xlabel="", ylabel="Abs.")
+    try:
+        ax_cd.set(xlabel=opts["xlabel"], ylabel="CD")
+    except KeyError:
+        ax_cd.set(xlabel="Wavenumbers (cm^-1)", ylabel="CD")
+    try:
+        ax_abs.set(title=opts["title"])
+    except KeyError:
+        pass
+    # Prepare the axes beforehand
+    line_abs = ax_abs.plot(x, specs[0]["abs"], animated=True)[0]
+    line_cd = ax_cd.plot(x, specs[0]["cd"], animated=True)[0]
+    ax_abs.set_xlim(x[0], x[-1])
+    ax_abs.set_ylim(1.1 * min_abs, 1.1 * max_abs)
+    ax_cd.set_ylim(1.1 * min_cd, 1.1 * max_cd)
+    ax_abs.grid()
+    ax_cd.grid()
+    for s in specs:
+        line_abs.set_ydata(s["abs"])
+        line_cd.set_ydata(s["cd"])
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+        path = outdir / f'{s["file"].stem}.tiff'
+        fig.savefig(path)
+    plt.close(fig)
 
 
 def save_stacked_plot(path: Path, x: np.ndarray, abs: np.ndarray, cd: np.ndarray, **opts: Dict) -> None:
@@ -188,7 +224,10 @@ def save_stacked_plot(path: Path, x: np.ndarray, abs: np.ndarray, cd: np.ndarray
     ax_abs.set(xlabel="", ylabel="Abs.")
     ax_abs.grid()
     ax_cd.plot(x, cd)
-    ax_cd.set(xlabel="Wavenumbers", ylabel="CD")
+    try:
+        ax_cd.set(xlabel=opts["xlabel"], ylabel="CD")
+    except KeyError:
+        ax_cd.set(xlabel="Wavenumbers (cm^-1)", ylabel="CD")
     ax_cd.grid()
     try:
         ax_abs.set(title=opts["title"])
@@ -196,3 +235,8 @@ def save_stacked_plot(path: Path, x: np.ndarray, abs: np.ndarray, cd: np.ndarray
         pass
     fig.savefig(path)
     plt.close(fig)
+
+
+def wavenumber_to_wavelength(wn: float) -> float:
+    """Convert a wavenumber in cm^-1 to wavelength in nm."""
+    return (1 / wn) * 1e7
