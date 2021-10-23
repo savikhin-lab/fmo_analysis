@@ -5,20 +5,22 @@ from typing import List, Tuple, Dict
 from .util import faster_np_savetxt, faster_np_savetxt_1d, parse_conf_file, Pigment, Config
 
 
-def delete_pigment_ham(ham: np.ndarray, delete: int) -> np.ndarray:
+def delete_pigment_ham(ham: np.ndarray, delete_pig: int) -> np.ndarray:
     """Remove the pigment from the Hamiltonian (set row and column to zero)."""
     new_ham = ham.copy()
-    new_ham[delete, :] = 0
-    new_ham[:, delete] = 0
+    idx = delete_pig - 1
+    new_ham[idx, :] = 0
+    new_ham[:, idx] = 0
     return new_ham
 
 
-def delete_pigment_pigs(pigs: List[Pigment], delete: int) -> List[Pigment]:
+def delete_pigment_pigs(pigs: List[Pigment], delete_pig: int) -> List[Pigment]:
     """Remove the pigment from the list of pigments (set mu = 0)."""
     new_pigs = [p for p in pigs]
-    p = new_pigs[delete]
+    idx = delete_pig - 1
+    p = new_pigs[idx]
     p.mu *= 0
-    new_pigs[delete] = p
+    new_pigs[idx] = p
     return new_pigs
 
 
