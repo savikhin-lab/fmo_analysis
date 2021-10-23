@@ -41,7 +41,7 @@ def cli():
 @click.option("-d", "--delete-pigment", type=click.INT, help="The pigment to delete (0 means none).")
 @click.option("-f", "--save-figs", default=False, is_flag=True, help="Save intermediate spectra. An average spectrum is still saved when this flag is not specified.")
 @click.option("-s", "--save-intermediate", default=False, is_flag=True, help="Save intermediate results as CSVs")
-def run(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate):
+def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate):
     # Making sure we have a valid configuration
     if config_file and any([overwrite, bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
@@ -167,5 +167,5 @@ def would_overwrite(outdir: Path) -> bool:
         return True
     return False
 
-cli.add_command(run)
+cli.add_command(conf2spec)
 cli.add_command(default_config)
