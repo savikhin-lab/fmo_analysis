@@ -167,12 +167,7 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     plots_dir = b_dir / "plots"
     plots_dir.mkdir(exist_ok=True)
     for s in b_specs["spectra"]:
-        x = s["x"]
-        abs = s["abs"]
-        cd = s["cd"]
-        stem = s["file"].stem
-        np.savetxt(abs_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
-        np.savetxt(cd_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
+        save_broadened_spectrum_csv(abs_dir, cd_dir, s)
     if config.save_figs:
         save_stacked_plots(plots_dir, b_specs["spectra"])
     x = b_specs["spectra"][0]["x"]
@@ -186,6 +181,16 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     np.savetxt(b_dir / "avg_cd.csv", cd_data, delimiter=",")
     save_stacked_plot(b_dir / "avg.tiff", x, abs_data[:, 1], cd_data[:, 1], title="Average")
     save_stacked_plot(b_dir / "avg_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], title="Average", xlabel="Wavelength (nm)")
+
+
+def save_broadened_spectrum_csv(a_dir: Path, c_dir: Path, spec: Dict) -> None:
+    """Save CSVs of the broadened absorption and CD spectra."""
+    x = spec["x"]
+    abs = spec["abs"]
+    cd = spec["cd"]
+    stem = spec["file"].stem
+    np.savetxt(a_dir / f"{stem}_abs.csv", np.stack((x, abs), axis=1), delimiter=",")
+    np.savetxt(c_dir / f"{stem}_cd.csv", np.stack((x, cd), axis=1), delimiter=",")
 
 
 def save_stacked_plots(outdir: Path, specs: List[Dict], **opts: Dict) -> None:
