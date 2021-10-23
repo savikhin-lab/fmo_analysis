@@ -105,7 +105,7 @@ def valid_config(config: Dict) -> bool:
         config["xstep"] > 0,
         config["bandwidth"] > 0,
         config["pignums"] > 0,
-        0 <= config["delete_pig"] < config["pignums"]
+        0 <= config["delete_pig"] <= config["pignums"]
     ]
     if not all(bounds_checks):
         return False
