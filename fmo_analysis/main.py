@@ -1,5 +1,6 @@
 import click
 import json
+import matplotlib.pyplot as plt
 import numbers
 import numpy as np
 from pathlib import Path
@@ -114,7 +115,42 @@ def align(input_dir, output_dir, num_pigments, overwrite, iter, tol):
     centered_coords = structures.center_structures(coords)
     rotated_coords, rotated_mus = structures.rotate(centered_coords, mus, iter, tol)
     save_conf_files(output_dir, [c.name for c in conf_files], hams, rotated_coords, rotated_mus)
+
+
+@click.command()
+@click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
+@click.option("-o", "--output-file", required=False, type=click.Path(dir_okay=False, file_okay=True, path_type=Path), help="The filename when saving the plot.")
+@click.option("-m", "--marker", default="dots", type=click.Choice(["dots", "lines"]), help="Whether to display positions as independent dots, or connect them with lines.")
+@click.option("-n", "--num-pigments", default=8, type=click.INT, help="The number of pigments in the Hamiltonian.")
+@click.option("-s", "--save", is_flag=True, help="Save the plot rather than displaying it.")
+def pigviz(input_dir, output_file, marker, num_pigments, save):
+    """Plot the positions of all pigments to inspect alignment.
     
+    Waits for the user to press 'Enter' before plotting the next set of pigments."""
+    conf_files = find_conf_files(input_dir)
+    parsed_confs = [parse_conf_file(c, num_pigments) for c in conf_files]
+    hams, coords, mus = structures.confs_to_arrs(parsed_confs)
+    fig = plt.figure()
+    fig.set_tight_layout(True)
+    ax = fig.add_subplot(projection="3d")
+    n_confs, n_pigs, _ = coords.shape
+    for i in range(n_confs):
+        xs = coords[i, :, 0]
+        ys = coords[i, :, 1]
+        zs = coords[i, :, 2]
+        if marker == "dots":
+            ax.scatter(xs, ys, zs)
+        elif marker == "lines":
+            ax.plot(xs, ys, zs)
+        else:
+            click.echo(f"Unknown marker type '{marker}'. Exiting.", err=True)
+            return
+    if save:
+        fig.savefig(output_file, dpi=300)
+    else:
+        fig.show()
+        input("Press Enter to exit.")
+
 
 @click.command()
 def default_config():
@@ -203,4 +239,5 @@ def would_overwrite(outdir: Path) -> bool:
 
 cli.add_command(conf2spec)
 cli.add_command(align)
+cli.add_command(pigviz)
 cli.add_command(default_config)
