@@ -4,8 +4,9 @@ import numbers
 import numpy as np
 from pathlib import Path
 from typing import List, Dict
+from . import structures
 from . import exciton
-from .util import Config
+from .util import Config, parse_conf_file, save_conf_files
 
 
 DEFAULT_CONFIG = {
@@ -81,6 +82,38 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
     # Compute and save broadened spectra
     broadened_spectra = exciton.make_broadened_spectra(config, stick_spectra)
     exciton.save_broadened_spectra(config, output_dir, broadened_spectra)
+
+
+@click.command()
+@click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
+@click.option("-o", "--output-dir", required=True, type=click.Path(dir_okay=True, file_okay=False, path_type=Path), help="The directory in which the aligned structures will be saved.")
+@click.option("-n", "--num-pigments", default=8, type=click.INT, help="The number of pigments in the Hamiltonian.")
+@click.option("--overwrite", is_flag=True, default=False, help="If specified, overwrite the data in the output directory.")
+@click.option("--iterations", "iter", default=100, type=click.INT, help="The maximum number of iterations when optimizing the orientation of each structure.")
+@click.option("--tolerance", "tol", default=1e-8, type=click.FLOAT, help="The tolerance maximum RMS difference between the rotated and average structure.")
+def align(input_dir, output_dir, num_pigments, overwrite, iter, tol):
+    """Rotate the structures for the best alignment between all of them.
+    
+    The structures may all be rotated relative to one another, which doesn't change
+    the physics, but does change the analysis. This command rotates and aligns the
+    positions and orientations of the pigments so that the analysis is performed on
+    pigments with common alignments."""
+    if not overwrite and output_dir.exists():
+        click.echo(f"Attempting to overwrite data in '{output_dir.name}' without specifying '--overwrite'. Exiting.", err=True)
+        return
+    if tol < 0:
+        click.echo(f"Tolerance must be >0 but was given '{tol}'. Exiting.", err=True)
+        return
+    if iter < 1:
+        click.echo(f"Iterations must be >1 but was given '{iter}'. Exiting.", err=True)
+        return
+    output_dir.mkdir(exist_ok=True)
+    conf_files = find_conf_files(input_dir)
+    parsed_confs = [parse_conf_file(c, num_pigments) for c in conf_files]
+    hams, coords, mus = structures.confs_to_arrs(parsed_confs)
+    centered_coords = structures.center_structures(coords)
+    rotated_coords, rotated_mus = structures.rotate(centered_coords, mus, iter, tol)
+    save_conf_files(output_dir, [c.name for c in conf_files], hams, rotated_coords, rotated_mus)
     
 
 @click.command()
@@ -167,5 +200,7 @@ def would_overwrite(outdir: Path) -> bool:
         return True
     return False
 
+
 cli.add_command(conf2spec)
+cli.add_command(align)
 cli.add_command(default_config)

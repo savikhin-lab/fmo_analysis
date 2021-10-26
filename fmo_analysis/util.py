@@ -29,21 +29,30 @@ class Pigment:
     mu: np.ndarray
 
 
-def parse_conf_file(config: Config, cf_path: Path) -> Tuple[np.ndarray, List[Pigment]]:
+def parse_conf_file(cf_path: Path, n: int) -> Tuple[np.ndarray, List[Pigment]]:
     """Extract the Hamiltonian and pigment data from a 'conf*.csv' file."""
-    n_pigs = config.pignums
-    arr = np.loadtxt(cf_path)
-    rows, cols = arr.shape
-    if (rows != n_pigs) or (cols != n_pigs + 6):
-        raise ValueError(f"Expected conf file with dimensions {n_pigs}x{n_pigs + 6}, found {rows}x{cols}")
-    ham = arr[:, :n_pigs]
-    # Shift diagonal elements according to config
-    for i in range(n_pigs):
-        ham[i, i] += config.shift_diag
+    try:
+        # Try loading with whitespace delimiting the columns
+        arr = np.loadtxt(cf_path)
+    except ValueError:
+        # If that doesn't work then fall back to comma as the delimiter
+        arr = np.loadtxt(cf_path, delimiter=",")
+    ham = arr[:, :n]
     mus = arr[:, -6:-3]
     coords = arr[:, -3:]
     pigments = [Pigment(np.array(c), np.array(m)) for c, m in zip(coords, mus)]
     return ham, pigments
+
+
+def save_conf_files(outdir: Path, filenames: List[str], hams: np.ndarray, coords: np.ndarray, mus: np.ndarray) -> None:
+    """Save conf files from arrays."""
+    _, n_pigs, _ = hams.shape
+    for i, fname in enumerate(filenames):
+        out_arr = np.zeros((n_pigs, n_pigs + 6))
+        out_arr[:, :n_pigs] = hams[i, :, :]
+        out_arr[:, -6:-3] = mus[i, :, :]
+        out_arr[:, -3:] = coords[i, :, :]
+        faster_np_savetxt(outdir / fname, out_arr)
 
 
 def faster_np_savetxt_1d(fname: Path, X: np.ndarray) -> None:

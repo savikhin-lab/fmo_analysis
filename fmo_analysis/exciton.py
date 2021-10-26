@@ -72,7 +72,11 @@ def make_stick_spectra(config: Config, cf: List[Path]) -> List[Dict]:
     """Computes the OD and CD stick spectra for a single Hamiltonian and set of pigments."""
     results = []
     for c in cf:
-        ham, pigs = parse_conf_file(config, c)
+        ham, pigs = parse_conf_file(c, config.pignums)
+        if ham.shape != (config.pignums, config.pignums):
+            raise ValueError(f"Expected Hamiltonian with shape {config.pignums}x{config.pignums}, found {ham.shape[0]}x{ham.shape[1]}")
+        for i in range(config.pignums):
+            ham[i, i] += config.shift_diag
         stick = make_stick_spectrum(config, ham, pigs)
         stick["file"] = c
         results.append(stick)
