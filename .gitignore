@@ -1,3 +1,4 @@
 resources
-confs
-results
+confs*
+results*
+work
