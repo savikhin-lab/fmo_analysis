@@ -18,6 +18,7 @@ class Config:
     overwrite: bool
     save_figs: bool
     save_intermediate: bool
+    empirical: bool
 
 
 @dataclass

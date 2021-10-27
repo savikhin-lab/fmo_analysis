@@ -22,7 +22,8 @@ DEFAULT_CONFIG = {
     "scale": False,
     "overwrite": False,
     "save_figs": False,
-    "save_intermediate": False
+    "save_intermediate": False,
+    "empirical": False
 }
 
 
@@ -41,7 +42,8 @@ def cli():
 @click.option("-d", "--delete-pigment", type=click.INT, help="The pigment to delete (0 means none).")
 @click.option("-f", "--save-figs", default=False, is_flag=True, help="Save intermediate spectra. An average spectrum is still saved when this flag is not specified.")
 @click.option("-s", "--save-intermediate", default=False, is_flag=True, help="Save intermediate results as CSVs")
-def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate):
+@click.option("-e", "--empirical", is_flag=True, help="The Hamiltonian is empirical, so don't apply diagonal shifts.")
+def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate, empirical):
     # Making sure we have a valid configuration
     if config_file and any([bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
@@ -60,6 +62,8 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         config_opts["save_figs"] = save_figs
     if save_intermediate:
         config_opts["save_intermediate"] = save_intermediate
+    if empirical:
+        config_opts["empirical"] = empirical
     if not valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
@@ -180,7 +184,7 @@ def valid_config(config: Dict) -> bool:
         return False
     # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
-        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate"]]
+        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate", "empirical"]]
     if not all(bool_checks):
         return False
     return True

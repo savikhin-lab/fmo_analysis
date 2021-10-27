@@ -68,15 +68,16 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         "stick_cd": stick_cd
     }
     return out
-    
+
 
 def make_stick_spectra(config: Config, cf: List[Path]) -> List[Dict]:
     """Computes the OD and CD stick spectra for a single Hamiltonian and set of pigments."""
     results = []
     for c in cf:
         ham, pigs = parse_conf_file(c)
-        for i in range(ham.shape[0]):
-            ham[i, i] += config.shift_diag
+        if not config.empirical:
+            for i in range(ham.shape[0]):
+                ham[i, i] += config.shift_diag
         stick = make_stick_spectrum(config, ham, pigs)
         stick["file"] = c
         results.append(stick)
