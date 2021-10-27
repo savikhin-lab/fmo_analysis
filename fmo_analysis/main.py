@@ -88,11 +88,10 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
 @click.command()
 @click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
 @click.option("-o", "--output-dir", required=True, type=click.Path(dir_okay=True, file_okay=False, path_type=Path), help="The directory in which the aligned structures will be saved.")
-@click.option("-n", "--num-pigments", default=8, type=click.INT, help="The number of pigments in the Hamiltonian.")
 @click.option("--overwrite", is_flag=True, default=False, help="If specified, overwrite the data in the output directory.")
 @click.option("--iterations", "iter", default=100, type=click.INT, help="The maximum number of iterations when optimizing the orientation of each structure.")
 @click.option("--tolerance", "tol", default=1e-8, type=click.FLOAT, help="The tolerance maximum RMS difference between the rotated and average structure.")
-def align(input_dir, output_dir, num_pigments, overwrite, iter, tol):
+def align(input_dir, output_dir, overwrite, iter, tol):
     """Rotate the structures for the best alignment between all of them.
     
     The structures may all be rotated relative to one another, which doesn't change
@@ -110,7 +109,7 @@ def align(input_dir, output_dir, num_pigments, overwrite, iter, tol):
         return
     output_dir.mkdir(exist_ok=True)
     conf_files = find_conf_files(input_dir)
-    parsed_confs = [parse_conf_file(c, num_pigments) for c in conf_files]
+    parsed_confs = [parse_conf_file(c) for c in conf_files]
     hams, coords, mus = structures.confs_to_arrs(parsed_confs)
     centered_coords = structures.center_structures(coords)
     rotated_coords, rotated_mus = structures.rotate(centered_coords, mus, iter, tol)
@@ -121,14 +120,13 @@ def align(input_dir, output_dir, num_pigments, overwrite, iter, tol):
 @click.option("-i", "--input-dir", required=True, type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path), help="The directory containing the 'conf*.csv' files.")
 @click.option("-o", "--output-file", required=False, type=click.Path(dir_okay=False, file_okay=True, path_type=Path), help="The filename when saving the plot.")
 @click.option("-m", "--marker", default="dots", type=click.Choice(["dots", "lines"]), help="Whether to display positions as independent dots, or connect them with lines.")
-@click.option("-n", "--num-pigments", default=8, type=click.INT, help="The number of pigments in the Hamiltonian.")
 @click.option("-s", "--save", is_flag=True, help="Save the plot rather than displaying it.")
-def pigviz(input_dir, output_file, marker, num_pigments, save):
+def pigviz(input_dir, output_file, marker, save):
     """Plot the positions of all pigments to inspect alignment.
     
     Waits for the user to press 'Enter' before plotting the next set of pigments."""
     conf_files = find_conf_files(input_dir)
-    parsed_confs = [parse_conf_file(c, num_pigments) for c in conf_files]
+    parsed_confs = [parse_conf_file(c) for c in conf_files]
     hams, coords, mus = structures.confs_to_arrs(parsed_confs)
     fig = plt.figure()
     fig.set_tight_layout(True)

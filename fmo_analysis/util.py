@@ -29,7 +29,7 @@ class Pigment:
     mu: np.ndarray
 
 
-def parse_conf_file(cf_path: Path, n: int) -> Tuple[np.ndarray, List[Pigment]]:
+def parse_conf_file(cf_path: Path) -> Tuple[np.ndarray, List[Pigment]]:
     """Extract the Hamiltonian and pigment data from a 'conf*.csv' file."""
     try:
         # Try loading with whitespace delimiting the columns
@@ -37,6 +37,7 @@ def parse_conf_file(cf_path: Path, n: int) -> Tuple[np.ndarray, List[Pigment]]:
     except ValueError:
         # If that doesn't work then fall back to comma as the delimiter
         arr = np.loadtxt(cf_path, delimiter=",")
+    n, _ = arr.shape
     ham = arr[:, :n]
     mus = arr[:, -6:-3]
     coords = arr[:, -3:]
