@@ -45,7 +45,7 @@ def cli():
 @click.option("-s", "--save-intermediate", default=False, is_flag=True, help="Save intermediate results as CSVs")
 def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate):
     # Making sure we have a valid configuration
-    if config_file and any([overwrite, bandwidth, (delete_pigment is not None)]):
+    if config_file and any([bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
         return
     if config_file:
