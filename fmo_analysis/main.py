@@ -16,13 +16,10 @@ DEFAULT_CONFIG = {
     "xstep": 1,
     "bandwidth": 70,
     "shift_diag": -2420,
-    "pignums": 8,
-    "delete_pig8": False,
     "dip_cor": 0.014,
     "delete_pig": 0,
     "use_shift_T": False,
     "scale": False,
-    "ignore_offdiagonal_shifts": False,
     "overwrite": False,
     "save_figs": False,
     "save_intermediate": False
@@ -169,7 +166,7 @@ def valid_config(config: Dict) -> bool:
     """Ensure that any configuration errors are caught before starting analysis."""
     # Make sure some values are numeric
     numeric = [isinstance(config[k], numbers.Number) for k in
-        ["xfrom", "xto", "xstep", "bandwidth", "shift_diag", "pignums", "dip_cor", "delete_pig"]]
+        ["xfrom", "xto", "xstep", "bandwidth", "shift_diag", "dip_cor", "delete_pig"]]
     if not all(numeric):
         return False
     bounds_checks = [
@@ -177,14 +174,13 @@ def valid_config(config: Dict) -> bool:
         config["xto"] > config["xfrom"],
         config["xstep"] > 0,
         config["bandwidth"] > 0,
-        config["pignums"] > 0,
-        0 <= config["delete_pig"] <= config["pignums"]
+        0 <= config["delete_pig"] <= 8
     ]
     if not all(bounds_checks):
         return False
     # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
-        ["delete_pig8", "use_shift_T", "scale", "ignore_offdiagonal_shifts", "overwrite", "save_figs", "save_intermediate"]]
+        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate"]]
     if not all(bool_checks):
         return False
     return True

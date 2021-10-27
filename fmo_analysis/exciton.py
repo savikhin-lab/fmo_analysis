@@ -36,6 +36,8 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
     """Computes the stick spectra and eigenvalues/eigenvectors for the system."""
     ham, pigs = delete_pigment(config, ham, pigs)
     n_pigs = ham.shape[0]
+    if config.delete_pig > n_pigs:
+        raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {n_pigs} pigments.")
     e_vals, e_vecs = np.linalg.eig(ham)
     pig_mus = np.zeros((n_pigs, 3))
     for i, p in enumerate(pigs):
@@ -73,9 +75,7 @@ def make_stick_spectra(config: Config, cf: List[Path]) -> List[Dict]:
     results = []
     for c in cf:
         ham, pigs = parse_conf_file(c)
-        if ham.shape != (config.pignums, config.pignums):
-            raise ValueError(f"Expected Hamiltonian with shape {config.pignums}x{config.pignums}, found {ham.shape[0]}x{ham.shape[1]}")
-        for i in range(config.pignums):
+        for i in range(ham.shape[0]):
             ham[i, i] += config.shift_diag
         stick = make_stick_spectrum(config, ham, pigs)
         stick["file"] = c

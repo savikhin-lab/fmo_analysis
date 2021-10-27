@@ -11,13 +11,10 @@ class Config:
     xstep: int
     bandwidth: float
     shift_diag: float
-    pignums: int
-    delete_pig8: bool
     dip_cor: float
     delete_pig: int
     use_shift_T: bool
     scale: bool
-    ignore_offdiagonal_shifts: bool
     overwrite: bool
     save_figs: bool
     save_intermediate: bool
