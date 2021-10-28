@@ -1,30 +1,11 @@
 import click
 import json
 import matplotlib.pyplot as plt
-import numbers
-import numpy as np
 from pathlib import Path
-from typing import List, Dict
 from . import structures
 from . import exciton
-from .util import Config, parse_conf_file, save_conf_files
-
-
-DEFAULT_CONFIG = {
-    "xfrom": 11790,
-    "xto": 13300,
-    "xstep": 1,
-    "bandwidth": 70,
-    "shift_diag": -2420,
-    "dip_cor": 0.014,
-    "delete_pig": 0,
-    "use_shift_T": False,
-    "scale": False,
-    "overwrite": False,
-    "save_figs": False,
-    "save_intermediate": False,
-    "empirical": False
-}
+from . import util
+from .util import Config
 
 
 @click.group()
@@ -49,9 +30,9 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
         return
     if config_file:
-        config_opts = merge_configs(json.load(config_file))
+        config_opts = util.merge_configs(json.load(config_file))
     else:
-        config_opts = DEFAULT_CONFIG
+        config_opts = util.DEFAULT_CONFIG
     if overwrite:
         config_opts["overwrite"] = overwrite
     if bandwidth:
@@ -64,20 +45,20 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         config_opts["save_intermediate"] = save_intermediate
     if empirical:
         config_opts["empirical"] = empirical
-    if not valid_config(config_opts):
+    if not util.valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return
     config = Config(**config_opts)
     # Loading the Hamiltonians and pigments from disk
-    conf_files = find_conf_files(input_dir)
+    conf_files = util.find_conf_files(input_dir)
     if config.use_shift_T:
-        shift_files = find_shift_files(conf_files, config)
+        shift_files = util.find_shift_files(conf_files, config)
     # Make sure we're not trying to overwrite anything unless we want to
-    if not config.overwrite and would_overwrite(output_dir):
+    if not config.overwrite and util.would_overwrite(output_dir):
         click.echo(f"Attempting to overwrite data in '{output_dir.name}' without specifying '--overwrite'. Exiting.", err=True)
         return
     output_dir.mkdir(exist_ok=True)
-    save_config(output_dir, config_opts)
+    util.save_config(output_dir, config_opts)
     # Compute and save stick spectra
     stick_spectra = exciton.make_stick_spectra(config, conf_files)
     if config.save_intermediate:
@@ -110,12 +91,12 @@ def align(input_dir, output_dir, overwrite, iter, tol):
         click.echo(f"Iterations must be >1 but was given '{iter}'. Exiting.", err=True)
         return
     output_dir.mkdir(exist_ok=True)
-    conf_files = find_conf_files(input_dir)
-    parsed_confs = [parse_conf_file(c) for c in conf_files]
+    conf_files = util.find_conf_files(input_dir)
+    parsed_confs = [util.parse_conf_file(c) for c in conf_files]
     hams, coords, mus = structures.confs_to_arrs(parsed_confs)
     centered_coords = structures.center_structures(coords)
     rotated_coords, rotated_mus = structures.rotate(centered_coords, mus, iter, tol)
-    save_conf_files(output_dir, [c.name for c in conf_files], hams, rotated_coords, rotated_mus)
+    util.save_conf_files(output_dir, [c.name for c in conf_files], hams, rotated_coords, rotated_mus)
 
 
 @click.command()
@@ -127,9 +108,8 @@ def pigviz(input_dir, output_file, marker, save):
     """Plot the positions of all pigments to inspect alignment.
     
     Waits for the user to press 'Enter' before plotting the next set of pigments."""
-    conf_files = find_conf_files(input_dir)
-    parsed_confs = [parse_conf_file(c) for c in conf_files]
-    hams, coords, mus = structures.confs_to_arrs(parsed_confs)
+    conf_files = util.find_conf_files(input_dir)
+    parsed_confs = [util.parse_conf_file(c) for c in conf_files]
     _, coords, _ = structures.confs_to_arrs(parsed_confs)
     fig = plt.figure()
     fig.set_tight_layout(True)
@@ -156,85 +136,7 @@ def pigviz(input_dir, output_file, marker, save):
 @click.command()
 def default_config():
     """Prints the default configuration for analysis."""
-    print(json.dumps(DEFAULT_CONFIG, indent=2, separators=(",", ": ")))
-
-
-def merge_configs(user_supplied_config):
-    """Updates the default config with user-supplied values."""
-    merged = {}
-    for k in DEFAULT_CONFIG.keys():
-        merged[k] = user_supplied_config.get(k, DEFAULT_CONFIG[k])
-    return merged
-
-
-def valid_config(config: Dict) -> bool:
-    """Ensure that any configuration errors are caught before starting analysis."""
-    # Make sure some values are numeric
-    numeric = [isinstance(config[k], numbers.Number) for k in
-        ["xfrom", "xto", "xstep", "bandwidth", "shift_diag", "dip_cor", "delete_pig"]]
-    if not all(numeric):
-        return False
-    bounds_checks = [
-        config["xfrom"] > 0,
-        config["xto"] > config["xfrom"],
-        config["xstep"] > 0,
-        config["bandwidth"] > 0,
-        0 <= config["delete_pig"] <= 8
-    ]
-    if not all(bounds_checks):
-        return False
-    # Make sure some values are boolean
-    bool_checks = [isinstance(config[k], bool) for k in
-        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate", "empirical"]]
-    if not all(bool_checks):
-        return False
-    return True
-
-
-def save_config(outdir: Path, config: Dict) -> None:
-    """Save the config used for this analysis to disk for auditing later."""
-    try:
-        del config["overwrite"]
-    except KeyError:
-        pass
-    out_path = outdir / "config_used.json"
-    with out_path.open("w") as f:
-        json.dump(config, f)
-
-
-def find_conf_files(input_dir: Path) -> List[Path]:
-    """Obtains paths for the 'conf*.csv' files containing the Hamiltonians."""
-    conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
-    if conf_files == []:
-        raise FileNotFoundError(f"No 'conf*.csv' files found in directory '{input_dir}'")
-    return conf_files
-
-
-def find_shift_files(files: List[Path], config: Config) -> List[Path]:
-    """Obtains paths for the 'conf*-shift.csv' files."""
-    parent = files[0].parent
-    paths = []
-    for f in files:
-        stem = f.stem
-        ext = f.suffix
-        shift_path = parent / (stem + "-shift" + ext)
-        if not shift_path.exists():
-            raise FileNotFoundError(f"Shift file '{shift_path.name}' not found.")
-        paths.append(shift_path)
-    return paths
-
-
-def would_overwrite(outdir: Path) -> bool:
-    """Walks the directory structure to make sure nothing exists that would be overwritten."""
-    if outdir.exists():
-        return True
-    stick_dir = outdir / "stick_spectra"
-    if stick_dir.exists():
-        return True
-    broadened_dir = outdir / "broadened_spectra"
-    if broadened_dir.exists():
-        return True
-    return False
+    print(json.dumps(util.DEFAULT_CONFIG, indent=2, separators=(",", ": ")))
 
 
 cli.add_command(conf2spec)

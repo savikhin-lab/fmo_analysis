@@ -1,7 +1,26 @@
 from dataclasses import dataclass
 from pathlib import Path
+import json
+import numbers
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+
+
+DEFAULT_CONFIG = {
+    "xfrom": 11790,
+    "xto": 13300,
+    "xstep": 1,
+    "bandwidth": 70,
+    "shift_diag": -2420,
+    "dip_cor": 0.014,
+    "delete_pig": 0,
+    "use_shift_T": False,
+    "scale": False,
+    "overwrite": False,
+    "save_figs": False,
+    "save_intermediate": False,
+    "empirical": False
+}
 
 
 @dataclass(frozen=True)
@@ -25,6 +44,84 @@ class Config:
 class Pigment:
     pos: np.ndarray
     mu: np.ndarray
+
+
+def find_conf_files(input_dir: Path) -> List[Path]:
+    """Obtains paths for the 'conf*.csv' files containing the Hamiltonians."""
+    conf_files = sorted([f for f in input_dir.iterdir() if f.name[:4] == "conf"])
+    if conf_files == []:
+        raise FileNotFoundError(f"No 'conf*.csv' files found in directory '{input_dir}'")
+    return conf_files
+
+
+def find_shift_files(files: List[Path], config: Config) -> List[Path]:
+    """Obtains paths for the 'conf*-shift.csv' files."""
+    parent = files[0].parent
+    paths = []
+    for f in files:
+        stem = f.stem
+        ext = f.suffix
+        shift_path = parent / (stem + "-shift" + ext)
+        if not shift_path.exists():
+            raise FileNotFoundError(f"Shift file '{shift_path.name}' not found.")
+        paths.append(shift_path)
+    return paths
+
+
+def would_overwrite(outdir: Path) -> bool:
+    """Walks the directory structure to make sure nothing exists that would be overwritten."""
+    if outdir.exists():
+        return True
+    stick_dir = outdir / "stick_spectra"
+    if stick_dir.exists():
+        return True
+    broadened_dir = outdir / "broadened_spectra"
+    if broadened_dir.exists():
+        return True
+    return False
+
+
+def merge_configs(user_supplied_config):
+    """Updates the default config with user-supplied values."""
+    merged = {}
+    for k in DEFAULT_CONFIG.keys():
+        merged[k] = user_supplied_config.get(k, DEFAULT_CONFIG[k])
+    return merged
+
+
+def valid_config(config: Dict) -> bool:
+    """Ensure that any configuration errors are caught before starting analysis."""
+    # Make sure some values are numeric
+    numeric = [isinstance(config[k], numbers.Number) for k in
+        ["xfrom", "xto", "xstep", "bandwidth", "shift_diag", "dip_cor", "delete_pig"]]
+    if not all(numeric):
+        return False
+    bounds_checks = [
+        config["xfrom"] > 0,
+        config["xto"] > config["xfrom"],
+        config["xstep"] > 0,
+        config["bandwidth"] > 0,
+        0 <= config["delete_pig"] <= 8
+    ]
+    if not all(bounds_checks):
+        return False
+    # Make sure some values are boolean
+    bool_checks = [isinstance(config[k], bool) for k in
+        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate", "empirical"]]
+    if not all(bool_checks):
+        return False
+    return True
+
+
+def save_config(outdir: Path, config: Dict) -> None:
+    """Save the config used for this analysis to disk for auditing later."""
+    try:
+        del config["overwrite"]
+    except KeyError:
+        pass
+    out_path = outdir / "config_used.json"
+    with out_path.open("w") as f:
+        json.dump(config, f)
 
 
 def parse_conf_file(cf_path: Path) -> Tuple[np.ndarray, List[Pigment]]:
