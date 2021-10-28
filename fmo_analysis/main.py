@@ -130,10 +130,11 @@ def pigviz(input_dir, output_file, marker, save):
     conf_files = find_conf_files(input_dir)
     parsed_confs = [parse_conf_file(c) for c in conf_files]
     hams, coords, mus = structures.confs_to_arrs(parsed_confs)
+    _, coords, _ = structures.confs_to_arrs(parsed_confs)
     fig = plt.figure()
     fig.set_tight_layout(True)
     ax = fig.add_subplot(projection="3d")
-    n_confs, n_pigs, _ = coords.shape
+    n_confs, _, _ = coords.shape
     for i in range(n_confs):
         xs = coords[i, :, 0]
         ys = coords[i, :, 1]
