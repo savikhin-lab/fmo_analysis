@@ -151,6 +151,17 @@ def save_conf_files(outdir: Path, filenames: List[str], hams: np.ndarray, coords
         faster_np_savetxt(outdir / fname, out_arr)
 
 
+def assemble_conf_file(ham: np.ndarray, pigs: List[Pigment]) -> np.ndarray:
+    """Stuffs a Hamiltonian and pigment info into a single array to be saved later."""
+    n_pigs, _ = ham.shape
+    arr = np.zeros((n_pigs, n_pigs + 6))
+    arr[:, :n_pigs] = ham
+    for i, p in enumerate(pigs):
+        arr[i, -6:-3] = p.mu
+        arr[i, -3:] = p.pos
+    return arr
+
+
 def faster_np_savetxt_1d(fname: Path, X: np.ndarray) -> None:
     """A strippled down version of 'np.savetxt' for 1D arrays."""
     with fname.open("w") as f:
