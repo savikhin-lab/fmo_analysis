@@ -19,7 +19,8 @@ DEFAULT_CONFIG = {
     "overwrite": False,
     "save_figs": False,
     "save_intermediate": False,
-    "empirical": False
+    "empirical": False,
+    "normalize": False
 }
 
 
@@ -38,6 +39,7 @@ class Config:
     save_figs: bool
     save_intermediate: bool
     empirical: bool
+    normalize: bool
 
 
 @dataclass
@@ -107,7 +109,7 @@ def valid_config(config: Dict) -> bool:
         return False
     # Make sure some values are boolean
     bool_checks = [isinstance(config[k], bool) for k in
-        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate", "empirical"]]
+        ["use_shift_T", "scale", "overwrite", "save_figs", "save_intermediate", "empirical", "normalize"]]
     if not all(bool_checks):
         return False
     return True

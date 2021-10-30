@@ -24,7 +24,8 @@ def cli():
 @click.option("-f", "--save-figs", default=False, is_flag=True, help="Save intermediate spectra. An average spectrum is still saved when this flag is not specified.")
 @click.option("-s", "--save-intermediate", default=False, is_flag=True, help="Save intermediate results as CSVs")
 @click.option("-e", "--empirical", is_flag=True, help="The Hamiltonian is empirical, so don't apply diagonal shifts.")
-def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate, empirical):
+@click.option("-n", "--normalize", is_flag=True, help="Normalize the total dipole strength to 1")
+def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate, empirical, normalize):
     # Making sure we have a valid configuration
     if config_file and any([bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
