@@ -83,7 +83,7 @@ def would_overwrite(outdir: Path) -> bool:
     return False
 
 
-def merge_configs(user_supplied_config):
+def merge_default_config_with_file(user_supplied_config):
     """Updates the default config with user-supplied values."""
     merged = {}
     for k in DEFAULT_CONFIG.keys():

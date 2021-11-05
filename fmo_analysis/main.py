@@ -31,7 +31,7 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
         return
     if config_file:
-        config_opts = util.merge_configs(json.load(config_file))
+        config_opts = util.merge_default_config_with_file(json.load(config_file))
     else:
         config_opts = util.DEFAULT_CONFIG
     if overwrite:
@@ -46,6 +46,7 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         config_opts["save_intermediate"] = save_intermediate
     if empirical:
         config_opts["empirical"] = empirical
+        config_opts["shift_diag"] = 0
     if not util.valid_config(config_opts):
         click.echo("Invalid config", err=True)
         return

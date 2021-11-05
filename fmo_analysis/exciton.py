@@ -79,9 +79,8 @@ def make_stick_spectra(config: Config, cf: List[Path]) -> List[Dict]:
     results = []
     for c in cf:
         ham, pigs = parse_conf_file(c)
-        if not config.empirical:
-            for i in range(ham.shape[0]):
-                ham[i, i] += config.shift_diag
+        for i in range(ham.shape[0]):
+            ham[i, i] += config.shift_diag
         stick = make_stick_spectrum(config, ham, pigs)
         stick["file"] = c
         results.append(stick)
