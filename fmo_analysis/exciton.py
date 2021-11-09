@@ -56,8 +56,8 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         if energy == 0:
             # If the energy is zero, the pigment has been deleted
             energy = 100_000
-        wavelength = 1e7 / energy
-        stick_coeff = - 2 * np.pi / wavelength
+        wavelength = 1e8 / energy  # in angstroms
+        stick_coeff = 2 * np.pi / wavelength
         for j in range(n_pigs):
             for k in range(n_pigs):
                 r = pigs[j].pos - pigs[k].pos
@@ -67,7 +67,8 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
                 mu_cross[0] = pigs[j].mu[1] * pigs[k].mu[2] - pigs[j].mu[2] * pigs[k].mu[1]
                 mu_cross[1] = pigs[j].mu[2] * pigs[k].mu[0] - pigs[j].mu[0] * pigs[k].mu[2]
                 mu_cross[2] = pigs[j].mu[0] * pigs[k].mu[1] - pigs[j].mu[1] * pigs[k].mu[0] 
-                stick_cd[i] += stick_coeff * e_vecs[j, i] * e_vecs[k, i] * np.dot(r, mu_cross)
+                stick_cd[i] += e_vecs[j, i] * e_vecs[k, i] * np.dot(r, mu_cross)
+        stick_cd[i] *= stick_coeff
     out = {
         "ham_deleted": ham,
         "pigs_deleted": pigs,
