@@ -150,7 +150,7 @@ def make_broadened_spectrum(config: Config, stick: Dict) -> Dict:
     return {"abs": abs, "cd": cd, "x": x}
 
 
-def make_broadened_spectra(config: Config, sticks: Dict) -> Dict:
+def make_broadened_spectra(config: Config, sticks: List[Dict]) -> Dict:
     """Make broadened spectra from the stick spectra."""
     individual_spectra = []
     for s in sticks:
