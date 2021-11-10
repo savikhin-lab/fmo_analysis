@@ -53,6 +53,7 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
     config = Config(**config_opts)
     # Loading the Hamiltonians and pigments from disk
     conf_files = util.find_conf_files(input_dir)
+    parsed_confs = util.load_confs(conf_files)
     if config.use_shift_T:
         shift_files = util.find_shift_files(conf_files, config)
     # Make sure we're not trying to overwrite anything unless we want to
@@ -61,8 +62,12 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
         return
     output_dir.mkdir(exist_ok=True)
     util.save_config(output_dir, config_opts)
+    # Apply any diagonal shift
+    if not config.empirical:
+        for conf in parsed_confs:
+            conf["ham"] = exciton.apply_const_diag_shift(conf["ham"], config.shift_diag)
     # Compute and save stick spectra
-    stick_spectra = exciton.make_stick_spectra(config, conf_files)
+    stick_spectra = exciton.make_stick_spectra(config, parsed_confs)
     if config.save_intermediate:
         exciton.save_stick_spectra(output_dir, stick_spectra)
     # Compute and save broadened spectra

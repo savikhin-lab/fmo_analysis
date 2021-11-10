@@ -142,6 +142,15 @@ def parse_conf_file(cf_path: Path) -> Tuple[np.ndarray, List[Pigment]]:
     return ham, pigments
 
 
+def load_confs(paths: List[Path]) -> List[Dict]:
+    """Load and parse the supplied conf files"""
+    parsed = list()
+    for p in paths:
+        ham, pigs = parse_conf_file(p)
+        parsed.append({"ham": ham, "pigs": pigs, "file": p})
+    return parsed
+
+
 def save_conf_files(outdir: Path, filenames: List[str], hams: np.ndarray, coords: np.ndarray, mus: np.ndarray) -> None:
     """Save conf files from arrays."""
     _, n_pigs, _ = hams.shape
