@@ -283,3 +283,12 @@ def random_hams(ham: np.ndarray, std_devs: List[float], n_hams: int) -> np.ndarr
         diags = rng.normal(loc=center, scale=std_dev, size=n_hams)
         rand_hams[:, i, i] = diags
     return rand_hams
+
+
+def apply_const_diag_shift(ham, shift):
+    """Apply a constant shift along the diagonal of the Hamiltonian"""
+    n, _ = ham.shape
+    shifted = np.copy(ham)
+    for i in range(n):
+        shifted[i, i] += shift
+    return shifted
