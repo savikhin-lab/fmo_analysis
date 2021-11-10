@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.random import default_rng
 from pathlib import Path
 from typing import List, Tuple, Dict
 from .util import faster_np_savetxt, faster_np_savetxt_1d, parse_conf_file, Pigment, Config
@@ -269,3 +270,16 @@ def save_stacked_plot(path: Path, x: np.ndarray, abs: np.ndarray, cd: np.ndarray
 def wavenumber_to_wavelength(wn: float) -> float:
     """Convert a wavenumber in cm^-1 to wavelength in nm."""
     return (1 / wn) * 1e7
+
+
+def random_hams(ham: np.ndarray, std_devs: List[float], n_hams: int) -> np.ndarray:
+    """Construct Hamiltonians where the diagonals are randomly shifted."""
+    n_pigs, _ = ham.shape
+    rng = default_rng(seed=123)
+    rand_hams = np.tile(ham, (n_hams, 1, 1))
+    for i in range(n_pigs):
+        center = ham[i, i]
+        std_dev = std_devs[i]
+        diags = rng.normal(loc=center, scale=std_dev, size=n_hams)
+        rand_hams[:, i, i] = diags
+    return rand_hams
