@@ -159,7 +159,11 @@ def make_broadened_spectra(config: Config, sticks: List[Dict]) -> Dict:
     individual_spectra = []
     for s in sticks:
         b = make_broadened_spectrum(config, s)
-        b["file"] = s["file"]
+        try:
+            b["file"] = s["file"]
+        except KeyError:
+            # If the filename isn't present, not a big deal
+            pass
         individual_spectra.append(b)
     avg_abs = np.mean([s["abs"] for s in individual_spectra], axis=0)
     avg_cd = np.mean([s["cd"] for s in individual_spectra], axis=0)
