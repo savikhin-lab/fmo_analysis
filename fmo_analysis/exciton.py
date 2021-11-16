@@ -196,11 +196,11 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     abs_data = np.zeros((len(x), 2))
     abs_data[:, 0] = x
     abs_data[:, 1] = b_specs["avg_abs"]
-    faster_np_savetxt(b_dir / "avg_abs.csv", abs_data)
+    faster_np_savetxt(outdir / "abs.csv", abs_data)
     cd_data = np.zeros((len(x), 2))
     cd_data[:, 0] = x
     cd_data[:, 1] = b_specs["avg_cd"]
-    faster_np_savetxt(b_dir / "avg_cd.csv", cd_data)
+    faster_np_savetxt(outdir / "cd.csv", cd_data)
     save_stacked_plot(b_dir / "avg.tiff", x, abs_data[:, 1], cd_data[:, 1], title="Average")
     save_stacked_plot(b_dir / "avg_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], title="Average", xlabel="Wavelength (nm)")
 
