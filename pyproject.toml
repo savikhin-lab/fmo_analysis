@@ -16,6 +16,9 @@ pytest = "^5.2"
 [tool.poetry.scripts]
 fmo-analysis = "fmo_analysis.main:cli"
 
+[tool.black]
+line-length = 120
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
