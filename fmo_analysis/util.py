@@ -1,10 +1,10 @@
-from dataclasses import dataclass
-from pathlib import Path
 import json
 import numbers
-import numpy as np
-from typing import List, Tuple, Dict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Tuple
 
+import numpy as np
 
 DEFAULT_CONFIG = {
     "xfrom": 11790,

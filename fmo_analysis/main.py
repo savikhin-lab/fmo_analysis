@@ -1,10 +1,10 @@
-import click
 import json
-import matplotlib.pyplot as plt
 from pathlib import Path
-from . import structures
-from . import exciton
-from . import util
+
+import click
+import matplotlib.pyplot as plt
+
+from . import exciton, structures, util
 from .util import Config
 
 

@@ -1,5 +1,7 @@
+from typing import Dict, List, Tuple
+
 import numpy as np
-from typing import List, Tuple, Dict
+
 from .util import Pigment
 
 

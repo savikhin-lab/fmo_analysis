@@ -1,9 +1,11 @@
+from pathlib import Path
+from typing import Dict, List, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import default_rng
-from pathlib import Path
-from typing import List, Tuple, Dict
-from .util import faster_np_savetxt, faster_np_savetxt_1d, parse_conf_file, Pigment, Config
+
+from .util import Config, Pigment, faster_np_savetxt, faster_np_savetxt_1d
 
 
 def delete_pigment_ham(ham: np.ndarray, delete_pig: int) -> np.ndarray:
@@ -17,7 +19,6 @@ def delete_pigment_ham(ham: np.ndarray, delete_pig: int) -> np.ndarray:
 
 def delete_pigment_pigs(pigs: List[Pigment], delete_pig: int) -> List[Pigment]:
     """Remove the pigment from the list of pigments (set mu = 0)."""
-    new_pigs = [p for p in pigs]
     idx = delete_pig - 1
     p = pigs[idx]
     p.mu *= 0
