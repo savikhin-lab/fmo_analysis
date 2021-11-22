@@ -19,10 +19,10 @@ def delete_pigment_pigs(pigs: List[Pigment], delete_pig: int) -> List[Pigment]:
     """Remove the pigment from the list of pigments (set mu = 0)."""
     new_pigs = [p for p in pigs]
     idx = delete_pig - 1
-    p = new_pigs[idx]
+    p = pigs[idx]
     p.mu *= 0
-    new_pigs[idx] = p
-    return new_pigs
+    pigs[idx] = p
+    return pigs
 
 
 def delete_pigment(config: Config, ham: np.ndarray, pigs: List[Pigment]) -> Tuple[np.ndarray, List[Pigment]]:
