@@ -26,6 +26,7 @@ def cli():
 @click.option("-e", "--empirical", is_flag=True, help="The Hamiltonian is empirical, so don't apply diagonal shifts.")
 @click.option("-n", "--normalize", is_flag=True, help="Normalize the total dipole strength to 1")
 def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_pigment, save_figs, save_intermediate, empirical, normalize):
+    """Generate spectra from one or more 'conf*.csv' files."""
     # Making sure we have a valid configuration
     if config_file and any([bandwidth, (delete_pigment is not None)]):
         click.echo("Supply config options as flags or in config file, but not both.", err=True)
