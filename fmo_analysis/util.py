@@ -133,7 +133,7 @@ def parse_conf_file(cf_path: Path) -> Tuple[np.ndarray, List[Pigment]]:
         arr = np.loadtxt(cf_path)
     except ValueError:
         # If that doesn't work then fall back to comma as the delimiter
-        arr = np.loadtxt(cf_path, delimiter=",")
+        arr = np.loadtxt(cf_path, delimiter=",", dtype=np.float32)
     n, _ = arr.shape
     ham = arr[:, :n]
     mus = arr[:, -6:-3]
