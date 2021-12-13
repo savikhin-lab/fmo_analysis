@@ -62,14 +62,20 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         stick_coeff = 2 * np.pi / wavelength
         for j in range(n_pigs):
             for k in range(n_pigs):
-                r = pigs[j].pos - pigs[k].pos
+                pig_j = pigs[j]
+                pig_k = pigs[k]
+                r = pig_j.pos - pig_k.pos
                 # NumPy cross product function is super slow for small arrays
                 # so we do it by hand for >10x speedup. It makes a difference!
                 mu_cross = np.empty(3)
-                mu_cross[0] = pigs[j].mu[1] * pigs[k].mu[2] - pigs[j].mu[2] * pigs[k].mu[1]
-                mu_cross[1] = pigs[j].mu[2] * pigs[k].mu[0] - pigs[j].mu[0] * pigs[k].mu[2]
-                mu_cross[2] = pigs[j].mu[0] * pigs[k].mu[1] - pigs[j].mu[1] * pigs[k].mu[0] 
-                stick_cd[i] += e_vecs[j, i] * e_vecs[k, i] * np.dot(r, mu_cross)
+                mu_j = pig_j.mu
+                mu_k = pig_k.mu
+                mu_cross[0] = mu_j[1] * mu_k[2] - mu_j[2] * mu_k[1]
+                mu_cross[1] = mu_j[2] * mu_k[0] - mu_j[0] * mu_k[2]
+                mu_cross[2] = mu_j[0] * mu_k[1] - mu_j[1] * mu_k[0]
+                # Calculate the dot product by hand, 2x faster than np.dot()
+                r_mu_dot = r[0] * mu_cross[0] + r[1] * mu_cross[1] + r[2] * mu_cross[2]
+                stick_cd[i] += e_vecs[j, i] * e_vecs[k, i] * r_mu_dot
         stick_cd[i] *= stick_coeff
     out = {
         "ham_deleted": ham,
