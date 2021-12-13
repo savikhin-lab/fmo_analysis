@@ -12,6 +12,7 @@ click = "^8.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+line-profiler = "^3.3.1"
 
 [tool.poetry.scripts]
 fmo-analysis = "fmo_analysis.main:cli"
