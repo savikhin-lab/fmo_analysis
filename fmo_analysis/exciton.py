@@ -61,7 +61,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         wavelength = 1e8 / energy  # in angstroms
         stick_coeff = 2 * np.pi / wavelength
         for j in range(n_pigs):
-            for k in range(n_pigs):
+            for k in range(j, n_pigs):
                 pig_j = pigs[j]
                 pig_k = pigs[k]
                 r = pig_j.pos - pig_k.pos
@@ -75,7 +75,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
                 mu_cross[2] = mu_j[0] * mu_k[1] - mu_j[1] * mu_k[0]
                 # Calculate the dot product by hand, 2x faster than np.dot()
                 r_mu_dot = r[0] * mu_cross[0] + r[1] * mu_cross[1] + r[2] * mu_cross[2]
-                stick_cd[i] += e_vecs[j, i] * e_vecs[k, i] * r_mu_dot
+                stick_cd[i] += 2 * e_vecs[j, i] * e_vecs[k, i] * r_mu_dot
         stick_cd[i] *= stick_coeff
     out = {
         "ham_deleted": ham,
