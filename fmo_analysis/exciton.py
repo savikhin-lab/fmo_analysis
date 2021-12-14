@@ -40,7 +40,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
     n_pigs = ham.shape[0]
     if config.delete_pig > n_pigs:
         raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {n_pigs} pigments.")
-    e_vals, e_vecs = np.linalg.eig(ham)
+    e_vals, e_vecs = np.linalg.eigh(ham)
     pig_mus = np.zeros((n_pigs, 3))
     if config.normalize:
         total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
