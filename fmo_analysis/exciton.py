@@ -61,7 +61,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         wavelength = 1e8 / energy  # in angstroms
         stick_coeff = 2 * np.pi / wavelength
         for j in range(n_pigs):
-            for k in range(j, n_pigs):
+            for k in range(j+1, n_pigs):
                 pig_j = pigs[j]
                 pig_k = pigs[k]
                 r = pig_j.pos - pig_k.pos
