@@ -51,6 +51,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
     exciton_mus = np.zeros_like(pig_mus)
     stick_abs = np.zeros(n_pigs)
     stick_cd = np.zeros(n_pigs)
+    r_mu_cross_cache = make_r_dot_mu_cross_cache(pigs)
     for i in range(n_pigs):
         exciton_mus[i, :] = np.sum(np.repeat(e_vecs[:, i], 3).reshape((n_pigs, 3)) * pig_mus, axis=0)
         stick_abs[i] = np.dot(exciton_mus[i], exciton_mus[i])
@@ -60,23 +61,8 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
             energy = 100_000
         wavelength = 1e8 / energy  # in angstroms
         stick_coeff = 2 * np.pi / wavelength
-        for j in range(n_pigs):
-            for k in range(j+1, n_pigs):
-                pig_j = pigs[j]
-                pig_k = pigs[k]
-                r = pig_j.pos - pig_k.pos
-                # NumPy cross product function is super slow for small arrays
-                # so we do it by hand for >10x speedup. It makes a difference!
-                mu_cross = np.empty(3)
-                mu_j = pig_j.mu
-                mu_k = pig_k.mu
-                mu_cross[0] = mu_j[1] * mu_k[2] - mu_j[2] * mu_k[1]
-                mu_cross[1] = mu_j[2] * mu_k[0] - mu_j[0] * mu_k[2]
-                mu_cross[2] = mu_j[0] * mu_k[1] - mu_j[1] * mu_k[0]
-                # Calculate the dot product by hand, 2x faster than np.dot()
-                r_mu_dot = r[0] * mu_cross[0] + r[1] * mu_cross[1] + r[2] * mu_cross[2]
-                stick_cd[i] += 2 * e_vecs[j, i] * e_vecs[k, i] * r_mu_dot
-        stick_cd[i] *= stick_coeff
+        e_vec_weights = make_weight_matrix(e_vecs, i)
+        stick_cd[i] = 2 * stick_coeff * np.sum(e_vec_weights * r_mu_cross_cache)
     out = {
         "ham_deleted": ham,
         "pigs_deleted": pigs,
@@ -87,6 +73,35 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         "stick_cd": stick_cd
     }
     return out
+
+
+def make_r_dot_mu_cross_cache(pigs):
+    """Computes a cache of (r_i - r_j) * (mu_i x mu_j)"""
+    n = len(pigs)
+    cache = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i+1, n):
+            r_i = pigs[i].pos
+            r_j = pigs[j].pos
+            r_ij = r_i - r_j
+            mu_i = pigs[i].mu
+            mu_j = pigs[j].mu
+            mu_ij_cross = np.empty(3)
+            mu_ij_cross[0] = mu_i[1] * mu_j[2] - mu_i[2] * mu_j[1]
+            mu_ij_cross[1] = mu_i[2] * mu_j[0] - mu_i[0] * mu_j[2]
+            mu_ij_cross[2] = mu_i[0] * mu_j[1] - mu_i[1] * mu_j[0]
+            cache[i, j] = r_ij[0] * mu_ij_cross[0] + r_ij[1] * mu_ij_cross[1] + r_ij[2] * mu_ij_cross[2]
+    return cache
+
+
+def make_weight_matrix(e_vecs, col):
+    """Makes the matrix of weights for CD from the eigenvectors"""
+    n = e_vecs.shape[0]
+    mat = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i+1, n):
+            mat[i, j] = e_vecs[i, col] * e_vecs[j, col]
+    return mat
 
 
 def make_stick_spectra(config: Config, cf: List[Dict]) -> List[Dict]:
