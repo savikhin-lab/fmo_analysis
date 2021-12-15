@@ -62,7 +62,7 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
         wavelength = 1e8 / energy  # in angstroms
         stick_coeff = 2 * np.pi / wavelength
         e_vec_weights = make_weight_matrix(e_vecs, i)
-        stick_cd[i] = 2 * stick_coeff * np.sum(e_vec_weights * r_mu_cross_cache)
+        stick_cd[i] = 2 * stick_coeff * np.dot(e_vec_weights.flatten(), r_mu_cross_cache.flatten())
     out = {
         "ham_deleted": ham,
         "pigs_deleted": pigs,
