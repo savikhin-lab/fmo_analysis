@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import default_rng
+from scipy.linalg import lapack
 
 from .util import Config, Pigment, faster_np_savetxt, faster_np_savetxt_1d
 
@@ -40,7 +41,9 @@ def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) ->
     n_pigs = ham.shape[0]
     if config.delete_pig > n_pigs:
         raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {n_pigs} pigments.")
-    e_vals, e_vecs = np.linalg.eigh(ham)
+    e_vals_fortran_order, _, _, e_vecs_fortran_order, _ = lapack.sgeev(ham)
+    e_vals = np.ascontiguousarray(e_vals_fortran_order)
+    e_vecs = np.ascontiguousarray(e_vecs_fortran_order)
     pig_mus = np.zeros((n_pigs, 3))
     if config.normalize:
         total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
