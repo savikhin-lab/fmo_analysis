@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fmo_analysis"
-version = "0.13.2"
+version = "0.13.3"
 description = ""
 authors = ["Zach Mitchell <zmitchell@fastmail.com>"]
 
@@ -10,6 +10,7 @@ numpy = "^1.21.2"
 matplotlib = "^3.4.3"
 click = "^8.0.3"
 scipy = "^1.7.3"
+ham2spec = {path = "../ham2spec"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

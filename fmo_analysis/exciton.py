@@ -7,6 +7,7 @@ from numpy.random import default_rng
 from scipy.linalg import lapack
 
 from .util import Config, Pigment, faster_np_savetxt, faster_np_savetxt_1d
+import ham2spec
 
 
 def delete_pigment_ham(ham: np.ndarray, delete_pig: int) -> np.ndarray:
@@ -35,47 +36,23 @@ def delete_pigment(config: Config, ham: np.ndarray, pigs: List[Pigment]) -> Tupl
     return ham, pigs
 
 
-def make_stick_spectrum(config: Config, ham: np.ndarray, pigs: List[Pigment]) -> Dict:
+def make_stick_spectrum(config, ham, pigs):
     """Computes the stick spectra and eigenvalues/eigenvectors for the system."""
     ham, pigs = delete_pigment(config, ham, pigs)
-    n_pigs = ham.shape[0]
-    if config.delete_pig > n_pigs:
-        raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {n_pigs} pigments.")
-    e_vals_fortran_order, _, _, e_vecs_fortran_order, _ = lapack.sgeev(ham)
-    e_vals = np.ascontiguousarray(e_vals_fortran_order)
-    e_vecs = np.ascontiguousarray(e_vecs_fortran_order)
-    pig_mus = np.zeros((n_pigs, 3))
+    size = ham.shape[0]
+    if config.delete_pig > size:
+        raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {size} pigments.")
     if config.normalize:
         total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
         for i in range(len(pigs)):
             pigs[i].mu /= total_dpm
-    for i, p in enumerate(pigs):
-        pig_mus[i, :] = pigs[i].mu
-    exciton_mus = np.zeros_like(pig_mus)
-    stick_abs = np.zeros(n_pigs)
-    stick_cd = np.zeros(n_pigs)
-    r_mu_cross_cache = make_r_dot_mu_cross_cache(pigs)
-    for i in range(n_pigs):
-        exciton_mus[i, :] = np.sum(np.repeat(e_vecs[:, i], 3).reshape((n_pigs, 3)) * pig_mus, axis=0)
-        stick_abs[i] = np.dot(exciton_mus[i], exciton_mus[i])
-        energy = e_vals[i]
-        if energy == 0:
-            # If the energy is zero, the pigment has been deleted
-            energy = 100_000
-        wavelength = 1e8 / energy  # in angstroms
-        stick_coeff = 2 * np.pi / wavelength
-        e_vec_weights = make_weight_matrix(e_vecs, i)
-        stick_cd[i] = 2 * stick_coeff * np.dot(e_vec_weights.flatten(), r_mu_cross_cache.flatten())
-    out = {
-        "ham_deleted": ham,
-        "pigs_deleted": pigs,
-        "e_vals": e_vals,
-        "e_vecs": e_vecs,
-        "exciton_mus": exciton_mus,
-        "stick_abs": stick_abs,
-        "stick_cd": stick_cd
-    }
-    return out
+    mus = np.empty((size, 3), dtype=np.float32)
+    pos = np.empty((size, 3), dtype=np.float32)
+    for i in range(size):
+        mus[i, :] = pigs[i].mu
+        pos[i, :] = pigs[i].pos
+    sticks = ham2spec.compute_stick_spectrum(ham, mus, pos)
+    return sticks
 
 
 def make_r_dot_mu_cross_cache(pigs):
