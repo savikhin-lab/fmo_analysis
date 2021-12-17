@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fmo_analysis"
-version = "0.13.3"
+version = "0.13.4"
 description = ""
 authors = ["Zach Mitchell <zmitchell@fastmail.com>"]
 

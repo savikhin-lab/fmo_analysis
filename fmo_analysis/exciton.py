@@ -120,7 +120,7 @@ def save_stick_spectrum(parent_dir: Path, stick: Dict):
     outdir = parent_dir / dir_name
     outdir.mkdir(exist_ok=True)
     faster_np_savetxt_1d(outdir / "energies.csv", stick["e_vals"])
-    faster_np_savetxt(outdir / "eigenvectors.csv", stick["e_vecs"].T)
+    faster_np_savetxt(outdir / "eigenvectors.csv", stick["e_vecs"])
     faster_np_savetxt(outdir / "exciton_mus.csv", stick["exciton_mus"])
     faster_np_savetxt_1d(outdir / "stick_abs.csv", stick["stick_abs"])
     faster_np_savetxt_1d(outdir / "stick_cd.csv", stick["stick_cd"])
