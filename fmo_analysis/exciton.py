@@ -46,8 +46,8 @@ def make_stick_spectrum(config, ham, pigs):
         total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
         for i in range(len(pigs)):
             pigs[i].mu /= total_dpm
-    mus = np.empty((size, 3), dtype=np.float32)
-    pos = np.empty((size, 3), dtype=np.float32)
+    mus = np.empty((size, 3), dtype=np.float64)
+    pos = np.empty((size, 3), dtype=np.float64)
     for i in range(size):
         mus[i, :] = pigs[i].mu
         pos[i, :] = pigs[i].pos
