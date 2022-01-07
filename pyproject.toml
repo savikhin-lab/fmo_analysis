@@ -10,7 +10,7 @@ numpy = "^1.21.2"
 matplotlib = "^3.4.3"
 click = "^8.0.3"
 scipy = "^1.7.3"
-ham2spec = "^0.3.0"
+ham2spec = "^0.5.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
