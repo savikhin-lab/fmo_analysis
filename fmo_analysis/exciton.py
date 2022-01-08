@@ -89,7 +89,7 @@ def stick_spectra(config: Config, confs: List[Dict]) -> List[Dict]:
     return sticks
 
 
-def save_stick_spectrum(parent_dir: Path, stick: Dict):
+def save_stick_spectrum(outdir: Path, stick: Dict):
     """Saves the result of computing a stick spectrum to disk.
     
     This saves 5 files:
@@ -102,9 +102,9 @@ def save_stick_spectrum(parent_dir: Path, stick: Dict):
     Note: The eigenvectors are stored one per column, but the exciton dipole moments
           are stored one per row.
     """
-    dir_name = stick["file"].stem
-    outdir = parent_dir / dir_name
-    outdir.mkdir(exist_ok=True)
+    # dir_name = stick["file"].stem
+    # outdir = parent_dir / dir_name
+    # outdir.mkdir(exist_ok=True)
     faster_np_savetxt_1d(outdir / "energies.csv", stick["e_vals"])
     faster_np_savetxt(outdir / "eigenvectors.csv", stick["e_vecs"])
     faster_np_savetxt(outdir / "exciton_mus.csv", stick["exciton_mus"])
@@ -121,9 +121,11 @@ def save_stick_spectra(outdir: Path, sticks: List[Dict]) -> None:
             conf*/
                 <result>
     """
-    stick_dir = outdir / "stick_spectra"
-    stick_dir.mkdir(exist_ok=True)
+    sticks_dir = outdir / "stick_spectra"
+    sticks_dir.mkdir(exist_ok=True)
     for s in sticks:
+        stick_dir = sticks_dir / s["file"].stem
+        stick_dir.mkdir(exist_ok=True)
         save_stick_spectrum(stick_dir, s)
 
 
@@ -139,7 +141,7 @@ def broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
     return ham2spec.compute_broadened_spectrum_from_stick(stick, config)
 
 
-def broadened_spectra_from_confs(config: Config, confs: List[Dict]) -> Dict:
+def broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
     """Make the average broadened spectra from a collection on Hamiltonians."""
     n_pigs = confs[0]["ham"].shape[0]
     n_confs = len(confs)
@@ -155,7 +157,39 @@ def broadened_spectra_from_confs(config: Config, confs: List[Dict]) -> Dict:
     return ham2spec.compute_broadened_spectra(hams, mus, rs, config)
 
 
-def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) -> None:
+def average_broadened_spectra(specs: List[Dict]):
+    n_specs = len(specs)
+    x = specs[0]["x"]
+    n_points = len(x)
+    abs_data = np.empty((n_points, n_specs))
+    cd_data = np.empty((n_points, n_specs))
+    for i, s in enumerate(specs):
+        abs_data[:, i] = s["abs"]
+        cd_data[:, i] = s["cd"]
+    avg = {
+        "x": x,
+        "abs": abs_data.mean(axis=1),
+        "cd": cd_data.mean(axis=1),
+    }
+    return avg
+
+
+def save_broadened_spectrum(outdir: Path, spec: Dict) -> None:
+    """Save a single broadened spectrum at the top level of the output directory."""
+    x = spec["x"]
+    abs_data = np.zeros((len(x), 2))
+    abs_data[:, 0] = x
+    abs_data[:, 1] = spec["abs"]
+    faster_np_savetxt(outdir / "abs.csv", abs_data)
+    cd_data = np.zeros((len(x), 2))
+    cd_data[:, 0] = x
+    cd_data[:, 1] = spec["cd"]
+    faster_np_savetxt(outdir / "cd.csv", cd_data)
+    save_stacked_plot(outdir / "spec_wn.tiff", x, abs_data[:, 1], cd_data[:, 1])
+    save_stacked_plot(outdir / "spec_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], xlabel="Wavelength (nm)")
+
+
+def save_broadened_spectra(config: Config, outdir: Path, specs: List[Dict]) -> None:
     """Save the results of computing the broadened spectra.
     
     The directory structure is:
@@ -176,22 +210,10 @@ def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) ->
     cd_dir.mkdir(exist_ok=True)
     plots_dir = b_dir / "plots"
     plots_dir.mkdir(exist_ok=True)
-    if config.save_intermediate:
-        for s in b_specs["spectra"]:
-            save_broadened_spectrum_csv(abs_dir, cd_dir, s)
+    for s in specs:
+        save_broadened_spectrum_csv(abs_dir, cd_dir, s)
     if config.save_figs:
-        save_stacked_plots(plots_dir, b_specs["spectra"])
-    x = b_specs["spectra"][0]["x"]
-    abs_data = np.zeros((len(x), 2))
-    abs_data[:, 0] = x
-    abs_data[:, 1] = b_specs["avg_abs"]
-    faster_np_savetxt(outdir / "abs.csv", abs_data)
-    cd_data = np.zeros((len(x), 2))
-    cd_data[:, 0] = x
-    cd_data[:, 1] = b_specs["avg_cd"]
-    faster_np_savetxt(outdir / "cd.csv", cd_data)
-    save_stacked_plot(b_dir / "avg.tiff", x, abs_data[:, 1], cd_data[:, 1], title="Average")
-    save_stacked_plot(b_dir / "avg_nm.tiff", wavenumber_to_wavelength(x), abs_data[:, 1], cd_data[:, 1], title="Average", xlabel="Wavelength (nm)")
+        save_stacked_plots(plots_dir, specs)
 
 
 def save_broadened_spectrum_csv(a_dir: Path, c_dir: Path, spec: Dict) -> None:

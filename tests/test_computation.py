@@ -1,81 +1,5 @@
-from fmo_analysis import exciton, util
-from pathlib import Path
-import numpy as np
+from fmo_analysis import exciton
 import numpy.testing as npt
-from pytest import fixture
-
-
-validation_data_dir = Path(__file__).parent.parent / "validation_data"
-
-
-@fixture
-def ham():
-    return np.loadtxt(validation_data_dir / "hamiltonian.txt").reshape((7,7))
-
-
-@fixture
-def positions():
-    return np.loadtxt(validation_data_dir / "positions.txt").reshape((7,3))
-
-
-@fixture
-def dipole_moments():
-    return np.loadtxt(validation_data_dir / "dipole_moments.txt").reshape((7,3))
-
-
-@fixture
-def eigenvalues():
-    return np.loadtxt(validation_data_dir / "eigenvalues.txt")
-
-
-@fixture
-def eigenvectors():
-    return np.loadtxt(validation_data_dir / "eigenvectors.txt").reshape((7,7))
-
-
-@fixture
-def exciton_dipole_moments():
-    return np.loadtxt(validation_data_dir / "exciton_dipole_moments.txt").reshape((7,3))
-
-
-@fixture
-def dipole_strengths():
-    return np.loadtxt(validation_data_dir / "dipole_strengths.txt")
-
-
-@fixture
-def rotational_strengths():
-    return np.loadtxt(validation_data_dir / "rotational_strengths.txt")
-
-
-@fixture
-def x():
-    return np.loadtxt(validation_data_dir / "x.txt")
-
-
-@fixture
-def abs():
-    return np.loadtxt(validation_data_dir / "abs.txt")
-
-
-@fixture
-def cd():
-    return np.loadtxt(validation_data_dir / "cd.txt")
-
-
-@fixture
-def config():
-    opts = util.DEFAULT_CONFIG.copy()
-    opts["bandwidth"] = 120
-    return util.Config(**opts)
-
-
-@fixture
-def pigments(dipole_moments, positions):
-    pigs = list()
-    for dpm, r in zip(dipole_moments, positions):
-        pigs.append(util.Pigment(r, dpm))
-    return pigs
 
 
 def test_diagonalizes_hamiltonian(ham, eigenvalues, eigenvectors, pigments, config):
@@ -139,10 +63,15 @@ def test_computes_broadened_spectrum_from_stick(config, dipole_strengths, rotati
 
 def test_computes_broadened_spectra_from_hams(config, ham, pigments, abs, cd, x):
     confs = [{"ham": ham, "pigs": pigments} for _ in range(100)]
-    broadened = exciton.broadened_spectra_from_confs(config, confs)
+    broadened = exciton.broadened_spectrum_from_confs(config, confs)
     npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
     npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
     npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
 
 
-# def test_can_save_stick_spectra(config)
+def test_computes_avg_spec(broadened_spec):
+    specs = [broadened_spec for _ in range(10)]
+    avg = exciton.average_broadened_spectra(specs)
+    npt.assert_almost_equal(broadened_spec["x"], avg["x"], decimal=4)
+    npt.assert_almost_equal(broadened_spec["abs"], avg["abs"], decimal=4)
+    npt.assert_almost_equal(broadened_spec["cd"], avg["cd"], decimal=4)

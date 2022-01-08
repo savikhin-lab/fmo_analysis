@@ -1,5 +1,5 @@
 resources
-conf*
+conf*/
 results*
 work
 spec*

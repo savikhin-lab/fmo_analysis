@@ -67,13 +67,46 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
     if not config.empirical:
         for conf in parsed_confs:
             conf["ham"] = exciton.apply_const_diag_shift(conf["ham"], config.shift_diag)
-    # Compute and save stick spectra
-    stick_spectra = exciton.make_stick_spectra(config, parsed_confs)
+    # Compute and save the spectra
     if config.save_intermediate:
-        exciton.save_stick_spectra(output_dir, stick_spectra)
-    # Compute and save broadened spectra
-    broadened_spectra = exciton.make_broadened_spectra(config, stick_spectra)
-    exciton.save_broadened_spectra(config, output_dir, broadened_spectra)
+        if len(parsed_confs) == 1:
+            compute_single_conf_save_intermediate(config, parsed_confs[0], output_dir)
+        else:
+            compute_multi_conf_save_intermediate(config, parsed_confs, output_dir)
+    else:
+        if len(parsed_confs) == 1:
+            compute_single_conf(config, parsed_confs[0], output_dir)
+        else:
+            compute_multi_conf(config, parsed_confs, output_dir)
+
+
+def compute_single_conf(config, conf, output_dir):
+    """Computes the broadened spectrum of a single Hamiltonian"""
+    spec = exciton.broadened_spectrum_from_ham(config, conf)
+    exciton.save_broadened_spectrum(output_dir, spec)
+
+
+def compute_single_conf_save_intermediate(config, conf, output_dir):
+    """Computes the spectra from a single Hamiltonian, saving the intermediate results."""
+    stick = exciton.stick_spectrum(config, conf["ham"], conf["pigs"])
+    exciton.save_stick_spectrum(output_dir, stick)
+    broadened = exciton.broadened_spectrum_from_stick(config, stick)
+    exciton.save_broadened_spectrum(output_dir, broadened)
+
+
+def compute_multi_conf(config, confs, output_dir):
+    """Computes the average broadened spectrum from multiple Hamiltonians."""
+    specs = exciton.broadened_spectra_from_confs(config, confs)
+    exciton.save_broadened_spectra(output_dir, specs)
+
+
+def compute_multi_conf_save_intermediate(config, confs, output_dir):
+    """Computes the spectra from multiple Hamiltonians, saving the intermediate results."""
+    sticks = exciton.stick_spectra(config, confs)
+    exciton.save_stick_spectra(output_dir, sticks)
+    broadened_specs = [exciton.broadened_spectrum_from_stick(config, s) for s in sticks]
+    avg_spec = exciton.average_broadened_spectra(broadened_specs)
+    exciton.save_broadened_spectra(config, output_dir, broadened_specs)
 
 
 @click.command()
