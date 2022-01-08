@@ -36,68 +36,57 @@ def delete_pigment(config: Config, ham: np.ndarray, pigs: List[Pigment]) -> Tupl
     return ham, pigs
 
 
-def make_stick_spectrum(config, ham, pigs):
+def pigs_to_arrays(pigs: List[Pigment]) -> Tuple[np.ndarray, np.ndarray]:
+    """Convert a list of pigments into separate arrays for positions and dipole moments."""
+    n_pigs = len(pigs)
+    mus = np.empty((n_pigs, 3))
+    rs = np.empty((n_pigs, 3))
+    for i, p in enumerate(pigs):
+        mus[i] = p.mu
+        rs[i] = p.pos
+    return mus, rs
+
+
+def confs_to_arrays(confs: List[Dict]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Convert a list of confs into separate arrays for Hamiltonians, positions, and dipole moments."""
+    n_confs = len(confs)
+    n_pigs = confs[0]["ham"].shape[0]
+    hams = np.empty((n_confs, n_pigs, n_pigs))
+    mus = np.empty((n_confs, n_pigs, 3))
+    rs = np.empty((n_confs, n_pigs, 3))
+    for i, c in enumerate(confs):
+        hams[i] = c["ham"]
+        m, r = pigs_to_arrays(c["pigs"])
+        mus[i] = m
+        rs[i] = r
+    return hams, mus, rs
+
+
+def stick_spectrum(config, ham, pigs):
     """Computes the stick spectra and eigenvalues/eigenvectors for the system."""
     ham, pigs = delete_pigment(config, ham, pigs)
-    size = ham.shape[0]
-    if config.delete_pig > size:
-        raise ValueError(f"Tried to delete pigment {config.delete_pig} but system only has {size} pigments.")
     if config.normalize:
         total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
         for i in range(len(pigs)):
             pigs[i].mu /= total_dpm
-    mus = np.empty((size, 3), dtype=np.float64)
-    pos = np.empty((size, 3), dtype=np.float64)
-    for i in range(size):
-        mus[i, :] = pigs[i].mu
-        pos[i, :] = pigs[i].pos
-    sticks = ham2spec.compute_stick_spectrum(ham, mus, pos)
+    mus, rs = pigs_to_arrays(pigs)
+    sticks = ham2spec.compute_stick_spectrum(ham, mus, rs)
     return sticks
 
 
-def make_r_dot_mu_cross_cache(pigs):
-    """Computes a cache of (r_i - r_j) * (mu_i x mu_j)"""
-    n = len(pigs)
-    cache = np.zeros((n, n))
-    for i in range(n):
-        for j in range(i+1, n):
-            r_i = pigs[i].pos
-            r_j = pigs[j].pos
-            r_ij = r_i - r_j
-            mu_i = pigs[i].mu
-            mu_j = pigs[j].mu
-            mu_ij_cross = np.empty(3)
-            mu_ij_cross[0] = mu_i[1] * mu_j[2] - mu_i[2] * mu_j[1]
-            mu_ij_cross[1] = mu_i[2] * mu_j[0] - mu_i[0] * mu_j[2]
-            mu_ij_cross[2] = mu_i[0] * mu_j[1] - mu_i[1] * mu_j[0]
-            cache[i, j] = r_ij[0] * mu_ij_cross[0] + r_ij[1] * mu_ij_cross[1] + r_ij[2] * mu_ij_cross[2]
-    return cache
-
-
-def make_weight_matrix(e_vecs, col):
-    """Makes the matrix of weights for CD from the eigenvectors"""
-    n = e_vecs.shape[0]
-    mat = np.zeros((n, n))
-    for i in range(n):
-        for j in range(i+1, n):
-            mat[i, j] = e_vecs[i, col] * e_vecs[j, col]
-    return mat
-
-
-def make_stick_spectra(config: Config, cf: List[Dict]) -> List[Dict]:
-    """Computes the OD and CD stick spectra for a single Hamiltonian and set of pigments."""
-    results = []
-    for c in cf:
-        stick = make_stick_spectrum(config, c["ham"], c["pigs"])
+def stick_spectra(config: Config, confs: List[Dict]) -> List[Dict]:
+    """Computes the stick spectra for a collection of Hamiltonians"""
+    hams, mus, rs = confs_to_arrays(confs)
+    sticks = ham2spec.compute_stick_spectra(hams, mus, rs)
+    for s, c in zip(sticks, confs):
         try:
             # If there's a record of which file this conf came from,
             # pass it along.
-            stick["file"] = c["file"]
+            s["file"] = c["file"]
         except KeyError:
             # If there's no record, not a big deal
             pass
-        results.append(stick)
-    return results
+    return sticks
 
 
 def save_stick_spectrum(parent_dir: Path, stick: Dict):
@@ -141,35 +130,32 @@ def save_stick_spectra(outdir: Path, sticks: List[Dict]) -> None:
         save_stick_spectrum(stick_dir, s)
 
 
-def make_broadened_spectrum(config: Config, stick: Dict) -> Dict:
+def broadened_spectrum_from_ham(config: Config, conf: Dict) -> Dict:
+    """Make the broadened spectrum from a Hamiltonian."""
+    n_pigs = conf["ham"].shape[0]
+    mus, rs = pigs_to_arrays(conf["pigs"])
+    return ham2spec.compute_broadened_spectrum_from_ham(conf["ham"], mus, rs, config)
+
+
+def broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
     """Make the broadened spectrum from a stick spectrum."""
-    x = np.arange(config.xfrom, config.xto, config.xstep, dtype=np.float64)
-    abs = np.zeros_like(x)
-    cd = np.zeros_like(x)
-    dip_strengths = stick["stick_abs"]
-    rot_strengths = stick["stick_cd"]
-    energies = stick["e_vals"]
-    sigma_squared = config.bandwidth**2 / (4 * np.log(2))
-    for exc in range(len(energies)):
-        abs += dip_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
-        cd += rot_strengths[exc] * np.exp(-(x - energies[exc])**2 / sigma_squared)
-    return {"abs": abs, "cd": cd, "x": x}
+    return ham2spec.compute_broadened_spectrum_from_stick(stick, config)
 
 
-def make_broadened_spectra(config: Config, sticks: List[Dict]) -> Dict:
-    """Make broadened spectra from the stick spectra."""
-    individual_spectra = []
-    for s in sticks:
-        b = make_broadened_spectrum(config, s)
-        try:
-            b["file"] = s["file"]
-        except KeyError:
-            # If the filename isn't present, not a big deal
-            pass
-        individual_spectra.append(b)
-    avg_abs = np.mean([s["abs"] for s in individual_spectra], axis=0)
-    avg_cd = np.mean([s["cd"] for s in individual_spectra], axis=0)
-    return {"spectra": individual_spectra, "avg_abs": avg_abs, "avg_cd": avg_cd}
+def broadened_spectra_from_confs(config: Config, confs: List[Dict]) -> Dict:
+    """Make the average broadened spectra from a collection on Hamiltonians."""
+    n_pigs = confs[0]["ham"].shape[0]
+    n_confs = len(confs)
+    hams = np.empty((n_confs, n_pigs, n_pigs))
+    mus = np.empty((n_confs, n_pigs, 3))
+    rs = np.empty((n_confs, n_pigs, 3))
+    for i in range(n_confs):
+        hams[i] = confs[i]["ham"]
+        pigs = confs[i]["pigs"]
+        for j in range(n_pigs):
+            mus[i, j] = pigs[j].mu
+            rs[i, j] = pigs[j].pos
+    return ham2spec.compute_broadened_spectra(hams, mus, rs, config)
 
 
 def save_broadened_spectra(config: Config, outdir: Path, b_specs: List[Dict]) -> None:

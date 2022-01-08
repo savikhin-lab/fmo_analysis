@@ -79,20 +79,20 @@ def pigments(dipole_moments, positions):
 
 
 def test_diagonalizes_hamiltonian(ham, eigenvalues, eigenvectors, pigments, config):
-    stick = exciton.make_stick_spectrum(config, ham, pigments)
+    stick = exciton.stick_spectrum(config, ham, pigments)
     npt.assert_array_almost_equal(eigenvalues, stick["e_vals"], decimal=2)
     computed_vecs = stick["e_vecs"]
     for i in range(7):
         try:
             # Eigenvectors are only defined up to a sign, and sometimes the sign can
-            # flip based on precision, etc
+            # flip as a result of intermediate calculations during diagonalization
             npt.assert_array_almost_equal(eigenvectors[:, i], computed_vecs[:, i], decimal=4)
         except AssertionError:
             npt.assert_array_almost_equal(eigenvectors[:, i], -computed_vecs[:, i], decimal=4)
 
 
 def test_computes_exciton_dipole_moments(ham, pigments, config, exciton_dipole_moments):
-    stick = exciton.make_stick_spectrum(config, ham, pigments)
+    stick = exciton.stick_spectrum(config, ham, pigments)
     for i in range(7):
         try:
             npt.assert_array_almost_equal(exciton_dipole_moments[i], stick["exciton_mus"][i], decimal=4)
@@ -101,22 +101,48 @@ def test_computes_exciton_dipole_moments(ham, pigments, config, exciton_dipole_m
 
 
 def test_computes_dipole_strengths(ham, pigments, config, dipole_strengths):
-    stick = exciton.make_stick_spectrum(config, ham, pigments)
+    stick = exciton.stick_spectrum(config, ham, pigments)
     npt.assert_array_almost_equal(dipole_strengths, stick["stick_abs"], decimal=4)
 
 
 def test_computes_rotational_strengths(ham, pigments, config, rotational_strengths):
-    stick = exciton.make_stick_spectrum(config, ham, pigments)
+    stick = exciton.stick_spectrum(config, ham, pigments)
     npt.assert_array_almost_equal(rotational_strengths, stick["stick_cd"], decimal=4)
 
 
-def test_computes_broadened_spectrum(config, dipole_strengths, rotational_strengths, eigenvalues, abs, cd, x):
+def test_computes_stick_spectra(config, ham, pigments, dipole_strengths, rotational_strengths):
+    confs = [{"ham": ham, "pigs": pigments} for _ in range(100)]
+    sticks = exciton.stick_spectra(config, confs)
+    for s in sticks:
+        npt.assert_array_almost_equal(dipole_strengths, s["stick_abs"], decimal=4)
+        npt.assert_array_almost_equal(rotational_strengths, s["stick_cd"], decimal=4)
+
+
+def test_computes_broadened_spectrum_from_ham(config, ham, pigments, abs, cd, x):
+    broadened = exciton.broadened_spectrum_from_ham(config, {"ham": ham, "pigs": pigments})
+    npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
+    npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
+    npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+def test_computes_broadened_spectrum_from_stick(config, dipole_strengths, rotational_strengths, eigenvalues, abs, cd, x):
     mock_stick_spec = {
         "stick_abs": dipole_strengths,
         "stick_cd": rotational_strengths,
         "e_vals": eigenvalues
     }
-    broadened = exciton.make_broadened_spectrum(config, mock_stick_spec)
+    broadened = exciton.broadened_spectrum_from_stick(config, mock_stick_spec)
     npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
     npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
     npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+def test_computes_broadened_spectra_from_hams(config, ham, pigments, abs, cd, x):
+    confs = [{"ham": ham, "pigs": pigments} for _ in range(100)]
+    broadened = exciton.broadened_spectra_from_confs(config, confs)
+    npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
+    npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
+    npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+# def test_can_save_stick_spectra(config)
