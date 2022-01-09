@@ -96,8 +96,8 @@ def compute_single_conf_save_intermediate(config, conf, output_dir):
 
 def compute_multi_conf(config, confs, output_dir):
     """Computes the average broadened spectrum from multiple Hamiltonians."""
-    specs = exciton.broadened_spectrum_from_confs(config, confs)
-    exciton.save_broadened_spectra(config, output_dir, specs)
+    spec = exciton.broadened_spectrum_from_confs(config, confs)
+    exciton.save_broadened_spectrum(output_dir, spec)
 
 
 def compute_multi_conf_save_intermediate(config, confs, output_dir):
