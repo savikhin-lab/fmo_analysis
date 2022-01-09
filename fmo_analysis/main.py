@@ -82,7 +82,7 @@ def conf2spec(config_file, input_dir, output_dir, overwrite, bandwidth, delete_p
 
 def compute_single_conf(config, conf, output_dir):
     """Computes the broadened spectrum of a single Hamiltonian"""
-    spec = exciton.broadened_spectrum_from_ham(config, conf)
+    spec = exciton.broadened_spectrum_from_conf(config, conf)
     exciton.save_broadened_spectrum(output_dir, spec)
 
 

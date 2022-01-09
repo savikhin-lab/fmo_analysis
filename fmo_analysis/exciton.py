@@ -64,12 +64,16 @@ def confs_to_arrays(confs: List[Dict]) -> Tuple[np.ndarray, np.ndarray, np.ndarr
 
 def stick_spectrum(config, ham, pigs):
     """Computes the stick spectra and eigenvalues/eigenvectors for the system."""
-    ham, pigs = delete_pigment(config, ham, pigs)
-    if config.normalize:
-        total_dpm = np.sum([np.dot(p.mu, p.mu) for p in pigs])
-        for i in range(len(pigs)):
-            pigs[i].mu /= total_dpm
     mus, rs = pigs_to_arrays(pigs)
+    if config.normalize:
+        total_dpm = np.sum([np.dot(mus[i], mus[i]) for i in range(len(pigs))])
+        mus /= total_dpm
+    if config.delete_pig > 0:
+        idx = config.delete_pig - 1
+        ham[:, idx] = 0
+        ham[idx, :] = 0
+        mus[idx, :] = 0
+        rs[idx, :] = 0
     sticks = ham2spec.compute_stick_spectrum(ham, mus, rs)
     return sticks
 
@@ -77,6 +81,12 @@ def stick_spectrum(config, ham, pigs):
 def stick_spectra(config: Config, confs: List[Dict]) -> List[Dict]:
     """Computes the stick spectra for a collection of Hamiltonians"""
     hams, mus, rs = confs_to_arrays(confs)
+    if config.delete_pig > 0:
+        pig_index = config.delete_pig - 1
+        hams[:, pig_index, :] = 0
+        hams[:, :, pig_index] = 0
+        mus[:, pig_index, :] = 0
+        rs[:, pig_index, :] = 0
     sticks = ham2spec.compute_stick_spectra(hams, mus, rs)
     for s, c in zip(sticks, confs):
         try:
@@ -129,11 +139,17 @@ def save_stick_spectra(outdir: Path, sticks: List[Dict]) -> None:
         save_stick_spectrum(stick_dir, s)
 
 
-def broadened_spectrum_from_ham(config: Config, conf: Dict) -> Dict:
+def broadened_spectrum_from_conf(config: Config, conf: Dict) -> Dict:
     """Make the broadened spectrum from a Hamiltonian."""
-    n_pigs = conf["ham"].shape[0]
+    ham = conf["ham"]
     mus, rs = pigs_to_arrays(conf["pigs"])
-    return ham2spec.compute_broadened_spectrum_from_ham(conf["ham"], mus, rs, config)
+    if config.delete_pig > 0:
+        idx = config.delete_pig - 1
+        ham[:, idx] = 0
+        ham[idx, :] = 0
+        mus[idx, :] = 0
+        rs[idx, :] = 0
+    return ham2spec.compute_broadened_spectrum_from_ham(ham, mus, rs, config)
 
 
 def broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
@@ -143,17 +159,13 @@ def broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
 
 def broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
     """Make the average broadened spectra from a collection on Hamiltonians."""
-    n_pigs = confs[0]["ham"].shape[0]
-    n_confs = len(confs)
-    hams = np.empty((n_confs, n_pigs, n_pigs))
-    mus = np.empty((n_confs, n_pigs, 3))
-    rs = np.empty((n_confs, n_pigs, 3))
-    for i in range(n_confs):
-        hams[i] = confs[i]["ham"]
-        pigs = confs[i]["pigs"]
-        for j in range(n_pigs):
-            mus[i, j] = pigs[j].mu
-            rs[i, j] = pigs[j].pos
+    hams, mus, rs = confs_to_arrays(confs)
+    if config.delete_pig > 0:
+        pig_index = config.delete_pig - 1
+        hams[:, pig_index, :] = 0
+        hams[:, :, pig_index] = 0
+        mus[:, pig_index, :] = 0
+        rs[:, pig_index, :] = 0
     return ham2spec.compute_broadened_spectra(hams, mus, rs, config)
 
 

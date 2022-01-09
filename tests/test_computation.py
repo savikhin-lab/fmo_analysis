@@ -1,5 +1,6 @@
-from fmo_analysis import exciton
+from fmo_analysis import exciton, util
 import numpy.testing as npt
+from pytest import raises
 
 
 def test_diagonalizes_hamiltonian(ham, eigenvalues, eigenvectors, pigments, config):
@@ -43,7 +44,7 @@ def test_computes_stick_spectra(config, ham, pigments, dipole_strengths, rotatio
 
 
 def test_computes_broadened_spectrum_from_ham(config, ham, pigments, abs, cd, x):
-    broadened = exciton.broadened_spectrum_from_ham(config, {"ham": ham, "pigs": pigments})
+    broadened = exciton.broadened_spectrum_from_conf(config, {"ham": ham, "pigs": pigments})
     npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
     npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
     npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
@@ -75,3 +76,40 @@ def test_computes_avg_spec(broadened_spec):
     npt.assert_almost_equal(broadened_spec["x"], avg["x"], decimal=4)
     npt.assert_almost_equal(broadened_spec["abs"], avg["abs"], decimal=4)
     npt.assert_almost_equal(broadened_spec["cd"], avg["cd"], decimal=4)
+
+
+def test_stick_spec_deletes_pigment(config_opts, ham, pigments, dipole_strengths):
+    config_opts["delete_pig"] = 1
+    config = util.Config(**config_opts)
+    spec = exciton.stick_spectrum(config, ham, pigments)
+    with raises(AssertionError):
+        npt.assert_almost_equal(dipole_strengths, spec["stick_abs"], decimal=4)
+
+
+def test_stick_spectra_deletes_pigment(config_opts, ham, pigments, dipole_strengths):
+    config_opts["delete_pig"] = 1
+    config = util.Config(**config_opts)
+    n_confs = 10
+    confs = [{"ham": ham, "pigs": pigments} for _ in range(n_confs)]
+    specs = exciton.stick_spectra(config, confs)
+    for s in specs:
+        with raises(AssertionError):
+            npt.assert_almost_equal(dipole_strengths, s["stick_abs"], decimal=4)
+
+
+def test_broadened_spectrum_deletes_pigment(config_opts, ham, pigments, abs):
+    config_opts["delete_pig"] = 1
+    config = util.Config(**config_opts)
+    spec = exciton.broadened_spectrum_from_conf(config, {"ham": ham, "pigs": pigments})
+    with raises(AssertionError):
+        npt.assert_almost_equal(abs, spec["abs"], decimal=4)
+
+
+def test_broadened_spectrum_multi_deletes_pigment(config_opts, ham, pigments, abs):
+    config_opts["delete_pig"] = 1
+    config = util.Config(**config_opts)
+    n_confs = 10
+    confs = [{"ham": ham, "pigs": pigments} for _ in range(n_confs)]
+    spec = exciton.broadened_spectrum_from_confs(config, confs)
+    with raises(AssertionError):
+        npt.assert_almost_equal(abs, spec["abs"], decimal=4)
