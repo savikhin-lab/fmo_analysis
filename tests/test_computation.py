@@ -3,6 +3,17 @@ import numpy.testing as npt
 from pytest import raises
 
 
+def test_can_construct_config():
+    c = util.Config(**util.DEFAULT_CONFIG)
+    assert c is not None
+
+
+def test_invalid_config():
+    opts = util.DEFAULT_CONFIG.copy()
+    opts["bandwidth"] = -1
+    assert not util.valid_config(opts)
+
+
 def test_diagonalizes_hamiltonian(ham, eigenvalues, eigenvectors, pigments, config):
     stick = exciton.stick_spectrum(config, ham, pigments)
     npt.assert_array_almost_equal(eigenvalues, stick["e_vals"], decimal=2)
