@@ -78,6 +78,7 @@ def config_opts():
 @fixture
 def config():
     opts = util.DEFAULT_CONFIG.copy()
+    # This is the value used to compute the validation data
     opts["bandwidth"] = 120
     return util.Config(**opts)
 
