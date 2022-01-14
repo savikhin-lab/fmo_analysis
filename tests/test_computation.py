@@ -159,3 +159,8 @@ def test_computes_het_broadened_spectrum_from_hams(config, ham, pigments, abs, c
     npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
     npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
     npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+def test_broadened_spec_isnt_readonly(config, stick_spec):
+    b_spec = exciton.broadened_spectrum_from_stick(config, stick_spec)
+    b_spec["abs"] *= 0
