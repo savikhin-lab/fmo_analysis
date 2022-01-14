@@ -166,7 +166,7 @@ def broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
         hams[:, :, pig_index] = 0
         mus[:, pig_index, :] = 0
         rs[:, pig_index, :] = 0
-    return ham2spec.compute_broadened_spectra(hams, mus, rs, config)
+    return ham2spec.compute_broadened_spectrum_from_hams(hams, mus, rs, config)
 
 
 def average_broadened_spectra(specs: List[Dict]):
