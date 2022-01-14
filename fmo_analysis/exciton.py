@@ -152,9 +152,27 @@ def broadened_spectrum_from_conf(config: Config, conf: Dict) -> Dict:
     return ham2spec.compute_broadened_spectrum_from_ham(ham, mus, rs, config)
 
 
+def het_broadened_spectrum_from_conf(config: Config, conf: Dict) -> Dict:
+    """Make the broadened spectrum from a Hamiltonian with different bandwidths for each transition."""
+    ham = conf["ham"]
+    mus, rs = pigs_to_arrays(conf["pigs"])
+    if config.delete_pig > 0:
+        idx = config.delete_pig - 1
+        ham[:, idx] = 0
+        ham[idx, :] = 0
+        mus[idx, :] = 0
+        rs[idx, :] = 0
+    return ham2spec.compute_het_broadened_spectrum_from_ham(ham, mus, rs, config)
+
+
 def broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
     """Make the broadened spectrum from a stick spectrum."""
     return ham2spec.compute_broadened_spectrum_from_stick(stick, config)
+
+
+def het_broadened_spectrum_from_stick(config: Config, stick: Dict) -> Dict:
+    """Make the broadened spectrum from a stick spectrum with different bandwidths for each transition."""
+    return ham2spec.compute_het_broadened_spectrum_from_stick(stick, config)
 
 
 def broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
@@ -167,6 +185,18 @@ def broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
         mus[:, pig_index, :] = 0
         rs[:, pig_index, :] = 0
     return ham2spec.compute_broadened_spectrum_from_hams(hams, mus, rs, config)
+
+
+def het_broadened_spectrum_from_confs(config: Config, confs: List[Dict]) -> Dict:
+    """Make the average broadened spectra from a collection on Hamiltonians."""
+    hams, mus, rs = confs_to_arrays(confs)
+    if config.delete_pig > 0:
+        pig_index = config.delete_pig - 1
+        hams[:, pig_index, :] = 0
+        hams[:, :, pig_index] = 0
+        mus[:, pig_index, :] = 0
+        rs[:, pig_index, :] = 0
+    return ham2spec.compute_het_broadened_spectrum_from_hams(hams, mus, rs, config)
 
 
 def average_broadened_spectra(specs: List[Dict]):

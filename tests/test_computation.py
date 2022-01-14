@@ -124,3 +124,38 @@ def test_broadened_spectrum_multi_deletes_pigment(config_opts, ham, pigments, ab
     spec = exciton.broadened_spectrum_from_confs(config, confs)
     with raises(AssertionError):
         npt.assert_almost_equal(abs, spec["abs"], decimal=4)
+
+
+def test_computes_het_broadened_spectrum_from_ham(config, ham, pigments, x, abs, cd):
+    broadened = exciton.het_broadened_spectrum_from_conf(config, {"ham": ham, "pigs": pigments})
+    npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
+    npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
+    npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+def test_het_broadened_spectrum_deletes_pigment(config_opts, ham, pigments, abs):
+    config_opts["delete_pig"] = 1
+    config = util.Config(**config_opts)
+    spec = exciton.het_broadened_spectrum_from_conf(config, {"ham": ham, "pigs": pigments})
+    with raises(AssertionError):
+        npt.assert_almost_equal(abs, spec["abs"], decimal=4)
+
+
+def test_computes_het_broadened_spectrum_from_stick(config, dipole_strengths, rotational_strengths, eigenvalues, abs, cd, x):
+    mock_stick_spec = {
+        "stick_abs": dipole_strengths,
+        "stick_cd": rotational_strengths,
+        "e_vals": eigenvalues
+    }
+    broadened = exciton.het_broadened_spectrum_from_stick(config, mock_stick_spec)
+    npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
+    npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
+    npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)
+
+
+def test_computes_het_broadened_spectrum_from_hams(config, ham, pigments, abs, cd, x):
+    confs = [{"ham": ham, "pigs": pigments} for _ in range(100)]
+    broadened = exciton.het_broadened_spectrum_from_confs(config, confs)
+    npt.assert_array_almost_equal(x, broadened["x"], decimal=4)
+    npt.assert_array_almost_equal(abs, broadened["abs"], decimal=4)
+    npt.assert_array_almost_equal(cd, broadened["cd"], decimal=4)

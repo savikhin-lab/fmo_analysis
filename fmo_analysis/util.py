@@ -11,6 +11,9 @@ DEFAULT_CONFIG = {
     "xto": 13300,
     "xstep": 1,
     "bandwidth": 70,
+    "abs_bws": [50 for _ in range(8)],
+    "cd_bws": [150 for _ in range(8)],
+    "band_cutoff": 4,
     "shift_diag": -2420,
     "dip_cor": 0.014,
     "delete_pig": 0,
@@ -30,6 +33,9 @@ class Config:
     xto: int
     xstep: int
     bandwidth: float
+    abs_bws: List[float]
+    cd_bws: List[float]
+    band_cutoff: float
     shift_diag: float
     dip_cor: float
     delete_pig: int

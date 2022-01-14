@@ -72,7 +72,12 @@ def cd():
 ######## Everything else
 @fixture
 def config_opts():
-    return util.DEFAULT_CONFIG.copy()
+    opts = util.DEFAULT_CONFIG.copy()
+    # Need to change the number of bandwidths
+    # since the validation data has 7 pigments
+    opts["abs_bws"] = [120 for _ in range(7)]
+    opts["cd_bws"] = [120 for _ in range(7)]
+    return opts
 
 
 @fixture
@@ -80,6 +85,8 @@ def config():
     opts = util.DEFAULT_CONFIG.copy()
     # This is the value used to compute the validation data
     opts["bandwidth"] = 120
+    opts["abs_bws"] = [120 for _ in range(7)]
+    opts["cd_bws"] = [120 for _ in range(7)]
     return util.Config(**opts)
 
 
