@@ -13,7 +13,7 @@ DEFAULT_CONFIG = {
     "bandwidth": 70,
     "abs_bws": [50 for _ in range(8)],
     "cd_bws": [150 for _ in range(8)],
-    "band_cutoff": 4,
+    "band_cutoff": 3,
     "shift_diag": -2420,
     "dip_cor": 0.014,
     "delete_pig": 0,
