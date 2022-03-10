@@ -1,6 +1,7 @@
 from fmo_analysis import exciton, util
 import numpy.testing as npt
 from pytest import raises
+from numpy.random import random
 
 
 def test_can_construct_config():
@@ -164,3 +165,13 @@ def test_computes_het_broadened_spectrum_from_hams(config, ham, pigments, abs, c
 def test_broadened_spec_isnt_readonly(config, stick_spec):
     b_spec = exciton.broadened_spectrum_from_stick(config, stick_spec)
     b_spec["abs"] *= 0
+
+
+def test_array_to_conf_conversion():
+    dummy_hams = random(size=(100, 8, 8))
+    dummy_mus = random(size=(100, 8, 3))
+    dummy_rs = random(size=(100, 8, 3))
+    hams, mus, rs = exciton.confs_to_arrays(exciton.arrays_to_confs(dummy_hams, dummy_mus, dummy_rs))
+    npt.assert_array_almost_equal(dummy_hams, hams, decimal=4)
+    npt.assert_array_almost_equal(dummy_mus, mus, decimal=4)
+    npt.assert_array_almost_equal(dummy_rs, rs, decimal=4)

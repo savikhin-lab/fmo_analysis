@@ -62,6 +62,21 @@ def confs_to_arrays(confs: List[Dict]) -> Tuple[np.ndarray, np.ndarray, np.ndarr
     return hams, mus, rs
 
 
+def arrays_to_confs(hams: np.ndarray, mus: np.ndarray, rs: np.ndarray):
+    """Convert arrays to a list of confs"""
+    n_confs, n_pigs, _ = hams.shape
+    confs = list()
+    for i in range(n_confs):
+        ham = hams[i]
+        mus_single = mus[i]
+        rs_single = rs[i]
+        pigs = list()
+        for j in range(n_pigs):
+            pigs.append(Pigment(rs_single[j], mus_single[j]))
+        confs.append({"ham": ham, "pigs": pigs})
+    return confs
+
+
 def stick_spectrum(config, ham, pigs):
     """Computes the stick spectra and eigenvalues/eigenvectors for the system."""
     mus, rs = pigs_to_arrays(pigs)
