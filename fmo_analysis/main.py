@@ -157,12 +157,13 @@ def pigviz(input_dir, output_file, marker, save):
     fig.set_tight_layout(True)
     ax = fig.add_subplot(projection="3d")
     n_confs, _, _ = coords.shape
+    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:olive", "tab:pink", "tab:cyan"]
     for i in range(n_confs):
         xs = coords[i, :, 0]
         ys = coords[i, :, 1]
         zs = coords[i, :, 2]
         if marker == "dots":
-            ax.scatter(xs, ys, zs)
+            ax.scatter(xs, ys, zs, color=colors)
         elif marker == "lines":
             ax.plot(xs, ys, zs)
         else:
